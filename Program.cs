@@ -25,7 +25,7 @@ namespace LanPlayServer
             Console.WriteLine();
             Console.WriteLine( "_________________________________________________________________________________");
             Console.WriteLine();
-            Console.WriteLine("- Informations");
+            Console.WriteLine("- Information");
 
             LdnServer.LdnServer     ldnServer = new LdnServer.LdnServer(IPAddress.Any, portLdn);
             ApiServer.ApiServer apiServer = new ApiServer.ApiServer(IPAddress.Any, portApi, ldnServer);

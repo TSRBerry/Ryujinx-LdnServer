@@ -207,7 +207,7 @@ namespace LanPlayServer.ApiServer
                         NodeInfo player = info.Ldn.Nodes[i];
                         string   name   = StringUtils.ReadUtf8String(player.UserName);
 
-                        // Would like add more players informations here, but needs a bit more work.
+                        // Would like add more players information here, but needs a bit more work.
                         gameAnalytics.Players.Add(name);
                     }
 
