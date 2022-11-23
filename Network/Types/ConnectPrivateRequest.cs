@@ -4,7 +4,7 @@ using LanPlayServer.LdnServer.Types;
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0xBC)]
-    struct ConnectPrivateRequest
+    internal struct ConnectPrivateRequest
     {
         public SecurityConfig SecurityConfig;
         public SecurityParameter SecurityParameter;

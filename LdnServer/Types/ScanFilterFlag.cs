@@ -1,6 +1,6 @@
 ﻿namespace LanPlayServer.LdnServer.Types
 {
-    enum ScanFilterFlag
+    internal enum ScanFilterFlag
     {
         LocalCommunicationId = 1 << 0,
         SessionId            = 1 << 1,

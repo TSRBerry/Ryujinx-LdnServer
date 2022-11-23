@@ -5,9 +5,9 @@ using NetCoreServer;
 
 namespace LanPlayServer.ApiServer
 {
-    class ApiServer : HttpServer
+    internal class ApiServer : HttpServer
     {
-        readonly LdnServer.LdnServer _ldnServer;
+        private readonly LdnServer.LdnServer _ldnServer;
 
         public ApiServer(IPAddress address, int port, LdnServer.LdnServer ldnServer) : base(address, port)
         {

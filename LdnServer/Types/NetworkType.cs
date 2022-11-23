@@ -1,6 +1,6 @@
 ﻿namespace LanPlayServer.LdnServer.Types
 {
-    enum NetworkType : uint
+    internal enum NetworkType : uint
     {
         None,
         General,

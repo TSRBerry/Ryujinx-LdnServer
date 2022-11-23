@@ -3,7 +3,7 @@
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x14)]
-    struct ProxyDisconnectMessage
+    internal struct ProxyDisconnectMessage
     {
         public ProxyInfo Info;
         public int DisconnectReason;

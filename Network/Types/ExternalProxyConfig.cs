@@ -8,7 +8,7 @@ namespace LanPlayServer.Network.Types
     /// The client then forwards this to the external proxy after connecting, to verify the connection worked.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Size = 0x26, Pack = 1)]
-    struct ExternalProxyConfig
+    internal struct ExternalProxyConfig
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x10)]
         public byte[] ProxyIp;

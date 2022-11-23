@@ -3,7 +3,7 @@
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x1, Pack = 1)]
-    struct SetAcceptPolicyRequest
+    internal struct SetAcceptPolicyRequest
     {
         public byte StationAcceptPolicy;
     }

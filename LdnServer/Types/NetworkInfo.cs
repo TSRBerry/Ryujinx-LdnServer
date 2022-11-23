@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x480)]
-    struct NetworkInfo
+    internal struct NetworkInfo
     {
         public NetworkId         NetworkId;
         public CommonNetworkInfo Common;

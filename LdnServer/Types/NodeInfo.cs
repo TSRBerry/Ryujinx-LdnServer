@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x40)]
-    struct NodeInfo
+    internal struct NodeInfo
     {
         public uint   Ipv4Address;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]

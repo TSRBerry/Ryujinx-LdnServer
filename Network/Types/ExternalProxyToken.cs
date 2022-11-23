@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x28)]
-    struct ExternalProxyToken
+    internal struct ExternalProxyToken
     {
         public uint VirtualIp;
 

@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x20)]
-    struct NetworkId
+    internal struct NetworkId
     {
         public IntentId IntentId;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x10)]

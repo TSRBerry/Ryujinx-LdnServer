@@ -1,6 +1,6 @@
 ﻿namespace LanPlayServer.LdnServer.Types
 {
-    enum SecurityMode : ushort
+    internal enum SecurityMode : ushort
     {
         All,
         Retail,

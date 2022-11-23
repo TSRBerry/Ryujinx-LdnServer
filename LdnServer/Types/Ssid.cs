@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x22)]
-    struct Ssid
+    internal struct Ssid
     {
         public byte Length;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x21)]

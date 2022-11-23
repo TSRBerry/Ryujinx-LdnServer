@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x20)]
-    struct NetworkConfig
+    internal struct NetworkConfig
     {
         public IntentId IntentId;
         public ushort   Channel;

@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x44)]
-    struct SecurityConfig
+    internal struct SecurityConfig
     {
         public SecurityMode SecurityMode;
         public ushort       PassphraseSize;

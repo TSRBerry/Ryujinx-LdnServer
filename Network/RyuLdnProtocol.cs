@@ -8,7 +8,7 @@ using LanPlayServer.LdnServer.Types;
 
 namespace LanPlayServer.Network
 {
-    class RyuLdnProtocol : IDisposable
+    internal class RyuLdnProtocol : IDisposable
     {
         private const byte CurrentProtocolVersion = 1;
         private const int  Magic                  = ('R' << 0) | ('L' << 8) | ('D' << 16) | ('N' << 24);
@@ -82,7 +82,7 @@ namespace LanPlayServer.Network
                     try
                     {
                         DecodeAndHandle(result.Item1, result.Item2);
-                    } 
+                    }
                     catch (Exception e)
                     {
                         Console.WriteLine($"Uncaught message exception: {e.ToString()}");
@@ -241,19 +241,19 @@ namespace LanPlayServer.Network
                 case PacketId.ExternalProxy:
                     {
                         ExternalProxy?.Invoke(header, ParseDefault<ExternalProxyConfig>(data));
-                        
+
                         break;
                     }
                 case PacketId.ExternalProxyState:
                     {
                         ExternalProxyState?.Invoke(header, ParseDefault<ExternalProxyConnectionState>(data));
-                        
+
                         break;
                     }
                 case PacketId.ExternalProxyToken:
                     {
                         ExternalProxyToken?.Invoke(header, ParseDefault<ExternalProxyToken>(data));
-                        
+
                         break;
                     }
 
@@ -285,19 +285,19 @@ namespace LanPlayServer.Network
                 case PacketId.SetAcceptPolicy:
                     {
                         SetAcceptPolicy?.Invoke(header, ParseDefault<SetAcceptPolicyRequest>(data));
-                    
+
                         break;
                     }
                 case PacketId.SetAdvertiseData:
                     {
                         SetAdvertiseData?.Invoke(header, data);
-                    
+
                         break;
                     }
                 case PacketId.Connect:
                     {
                         Connect?.Invoke(header, ParseDefault<ConnectRequest>(data));
-                    
+
                         break;
                     }
                 case PacketId.ConnectPrivate:
@@ -309,7 +309,7 @@ namespace LanPlayServer.Network
                 case PacketId.Scan:
                     {
                         Scan?.Invoke(header, ParseDefault<ScanFilter>(data));
-                    
+
                         break;
                     }
 
@@ -317,19 +317,19 @@ namespace LanPlayServer.Network
                 case PacketId.ProxyConfig:
                     {
                         ProxyConfig?.Invoke(header, ParseDefault<ProxyConfig>(data));
-                    
+
                         break;
                     }
                 case PacketId.ProxyConnect:
                     {
                         ProxyConnect?.Invoke(header, ParseDefault<ProxyConnectRequest>(data));
-                    
+
                         break;
                     }
                 case PacketId.ProxyConnectReply:
                     {
                         ProxyConnectReply?.Invoke(header, ParseDefault<ProxyConnectResponse>(data));
-                    
+
                         break;
                     }
                 case PacketId.ProxyData:
@@ -343,7 +343,7 @@ namespace LanPlayServer.Network
                 case PacketId.ProxyDisconnect:
                     {
                         ProxyDisconnect?.Invoke(header, ParseDefault<ProxyDisconnectMessage>(data));
-                    
+
                         break;
                     }
 
@@ -351,13 +351,13 @@ namespace LanPlayServer.Network
                 case PacketId.Ping:
                     {
                         Ping?.Invoke(header, ParseDefault<PingMessage>(data));
-                    
+
                         break;
                     }
                 case PacketId.NetworkError:
                     {
                         NetworkError?.Invoke(header, ParseDefault<NetworkErrorMessage>(data));
-                    
+
                         break;
                     }
 
@@ -388,7 +388,7 @@ namespace LanPlayServer.Network
         public byte[] Encode(PacketId type, byte[] data)
         {
             LdnHeader header = GetHeader(type, data.Length);
-            
+
             byte[] result = LdnHelper.StructureToByteArray(header, data.Length);
 
             Array.Copy(data, 0, result, Marshal.SizeOf<LdnHeader>(), data.Length);

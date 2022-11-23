@@ -8,9 +8,9 @@ using LanPlayServer.Utils;
 
 namespace LanPlayServer
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             int portLdn = 30456;
             int portApi = 8080;
@@ -93,7 +93,7 @@ namespace LanPlayServer
 #endif
         }
 
-        static bool RestartLdnServer(LdnServer.LdnServer ldnServer)
+        private static bool RestartLdnServer(LdnServer.LdnServer ldnServer)
         {
             Console.Write("    !restart-ldn: LDN Server restarting...");
             ldnServer.Restart();
@@ -102,7 +102,7 @@ namespace LanPlayServer
             return true;
         }
 
-        static bool RestartApiServer(ApiServer.ApiServer apiServer)
+        private static bool RestartApiServer(ApiServer.ApiServer apiServer)
         {
             Console.Write("    !restart-api: API Server restarting...");
             apiServer.Restart();
@@ -112,7 +112,7 @@ namespace LanPlayServer
         }
 
         // TODO: Maybe handle that in the API with a password or something ?
-        static bool List(LdnServer.LdnServer server)
+        private static bool List(LdnServer.LdnServer server)
         {
             KeyValuePair<string, HostedGame>[] games = server.All();
 

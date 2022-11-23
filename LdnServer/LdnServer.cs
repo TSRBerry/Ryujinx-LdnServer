@@ -11,7 +11,7 @@ using NetCoreServer;
 
 namespace LanPlayServer.LdnServer
 {
-    class LdnServer : TcpServer
+    internal class LdnServer : TcpServer
     {
         public static readonly int InactivityPingFrequency = 10000;
 

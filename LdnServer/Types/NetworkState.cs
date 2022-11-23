@@ -1,6 +1,6 @@
 ﻿namespace LanPlayServer.LdnServer.Types
 {
-    enum NetworkState
+    internal enum NetworkState
     {
         None,
         Initialized,

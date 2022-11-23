@@ -1,6 +1,6 @@
 ﻿namespace LanPlayServer.LdnServer.Types
 {
-    enum DisconnectReason
+    internal enum DisconnectReason
     {
         None,
         DisconnectedByUser,

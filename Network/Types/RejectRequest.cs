@@ -4,7 +4,7 @@ using LanPlayServer.LdnServer.Types;
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x8)]
-    struct RejectRequest
+    internal struct RejectRequest
     {
         public uint NodeId;
         public DisconnectReason DisconnectReason;

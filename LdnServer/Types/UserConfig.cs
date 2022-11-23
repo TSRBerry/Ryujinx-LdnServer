@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x30)]
-    struct UserConfig
+    internal struct UserConfig
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x21)]
         public byte[] UserName;

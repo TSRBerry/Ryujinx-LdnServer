@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x60)]
-    struct ScanFilter
+    internal struct ScanFilter
     {
         public NetworkId      NetworkId;
         public NetworkType    NetworkType;

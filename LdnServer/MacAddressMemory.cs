@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace LanPlayServer.LdnServer
 {
-    class MacAddressMemory
+    internal class MacAddressMemory
     {
         private HashSet<string> _reservedAddresses = new HashSet<string>();
         private ConcurrentDictionary<string, byte[]> _idToAddress = new ConcurrentDictionary<string, byte[]>();

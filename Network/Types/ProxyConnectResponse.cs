@@ -3,7 +3,7 @@
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
-    struct ProxyConnectResponse
+    internal struct ProxyConnectResponse
     {
         public ProxyInfo Info;
     }

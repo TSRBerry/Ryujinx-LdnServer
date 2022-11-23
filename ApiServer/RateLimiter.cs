@@ -4,13 +4,13 @@ using System.Net;
 
 namespace LanPlayServer.ApiServer
 {
-    class RateLimiterBucket
+    internal class RateLimiterBucket
     {
         public int      Count;
         public DateTime StartTime;
     }
 
-    static class RateLimiter
+    internal static class RateLimiter
     {
         private static uint   _rateLimit;
         private static double _rateLimitTime;

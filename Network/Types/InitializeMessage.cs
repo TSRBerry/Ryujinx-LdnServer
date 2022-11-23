@@ -8,7 +8,7 @@ namespace LanPlayServer.Network.Types
     /// Otherwise, they are returned a random mac address.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Size = 0x16)]
-    struct InitializeMessage
+    internal struct InitializeMessage
     {
         // All 0 if we don't have an ID yet.
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x10)]

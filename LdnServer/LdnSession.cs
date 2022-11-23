@@ -14,7 +14,7 @@ using NetCoreServer;
 
 namespace LanPlayServer.LdnServer
 {
-    class LdnSession : TcpSession
+    internal class LdnSession : TcpSession
     {
         private const int ExternalProxyTimeout = 2;
 

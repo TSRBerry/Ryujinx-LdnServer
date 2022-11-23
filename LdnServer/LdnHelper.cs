@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace LanPlayServer.LdnServer
 {
-    static class LdnHelper
+    internal static class LdnHelper
     {
         public static byte[] StructureToByteArray(object obj, int padding = 0)
         {

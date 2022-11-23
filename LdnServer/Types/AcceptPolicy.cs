@@ -1,6 +1,6 @@
 ﻿namespace LanPlayServer.LdnServer.Types
 {
-    enum AcceptPolicy : byte
+    internal enum AcceptPolicy : byte
     {
         AcceptAll,
         RejectAll,

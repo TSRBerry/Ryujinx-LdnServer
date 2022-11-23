@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 8)]
-    struct NodeLatestUpdate
+    internal struct NodeLatestUpdate
     {
         public byte   State;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 7)]

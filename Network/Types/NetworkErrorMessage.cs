@@ -2,7 +2,7 @@
 
 namespace LanPlayServer.Network.Types
 {
-    enum NetworkError : int
+    internal enum NetworkError : int
     {
         None,
 
@@ -23,7 +23,7 @@ namespace LanPlayServer.Network.Types
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 0x4)]
-    struct NetworkErrorMessage
+    internal struct NetworkErrorMessage
     {
         public NetworkError Error;
     }

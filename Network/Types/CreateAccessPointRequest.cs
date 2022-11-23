@@ -4,7 +4,7 @@ using LanPlayServer.LdnServer.Types;
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0xBC, Pack = 1)]
-    struct CreateAccessPointRequest
+    internal struct CreateAccessPointRequest
     {
         public SecurityConfig SecurityConfig;
         public UserConfig     UserConfig;

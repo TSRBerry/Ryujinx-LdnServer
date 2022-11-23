@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x430)]
-    struct LdnNetworkInfo
+    internal struct LdnNetworkInfo
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x10)]
         public byte[]     SecurityParameter;

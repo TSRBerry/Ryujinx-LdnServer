@@ -6,7 +6,7 @@ using System.Text;
 
 namespace LanPlayServer.Utils
 {
-    static class StringUtils
+    internal static class StringUtils
     {
         public static byte[] GetFixedLengthBytes(string inputString, int size, Encoding encoding)
         {

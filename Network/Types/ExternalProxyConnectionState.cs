@@ -10,7 +10,7 @@ namespace LanPlayServer.Network.Types
     /// Both will result in a force kick.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Size = 0x8, Pack = 4)]
-    struct ExternalProxyConnectionState
+    internal struct ExternalProxyConnectionState
     {
         public uint IpAddress;
         public bool Connected;

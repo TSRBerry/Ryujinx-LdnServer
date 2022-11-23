@@ -7,7 +7,7 @@ namespace LanPlayServer.Network
     /// <summary>
     /// Try to give clients unique virtual IPs that haven't been used before.
     /// </summary>
-    class VirtualDhcp
+    internal class VirtualDhcp
     {
         private object _lock = new object();
 

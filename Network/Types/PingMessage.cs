@@ -3,7 +3,7 @@
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x2)]
-    struct PingMessage
+    internal struct PingMessage
     {
         public byte Requester;
         public byte Id;

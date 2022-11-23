@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace LanPlayServer.LdnServer
 {
-    enum GameLockReason
+    internal enum GameLockReason
     {
         None,
         UpdateNetworkInfo,
@@ -32,7 +32,7 @@ namespace LanPlayServer.LdnServer
         Close
     }
 
-    class HostedGame
+    internal class HostedGame
     {
         private const uint NetworkBaseAddress = 0x0a720000; // 10.114.0.0 (our "virtual network")
         private const uint NetworkSubnetMask  = 0xffff0000; // 255.255.0.0

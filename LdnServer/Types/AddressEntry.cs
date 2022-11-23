@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0xC)]
-    struct AddressEntry
+    internal struct AddressEntry
     {
         public uint   Ipv4Address;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
@@ -12,7 +12,7 @@ namespace LanPlayServer.LdnServer.Types
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 0x60)]
-    struct AddressList
+    internal struct AddressList
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
         public AddressEntry[] Addresses;

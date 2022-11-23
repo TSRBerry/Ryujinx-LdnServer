@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x10)]
-    struct IntentId
+    internal struct IntentId
     {
         public ulong  LocalCommunicationId;
         public ushort Reserved1;

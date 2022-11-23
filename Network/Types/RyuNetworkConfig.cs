@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace LanPlayServer.Network.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x28, Pack = 1)]
-    struct RyuNetworkConfig
+    internal struct RyuNetworkConfig
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x10)]
         public byte[] GameVersion;

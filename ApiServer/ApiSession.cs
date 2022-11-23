@@ -13,9 +13,9 @@ using NetCoreServer;
 
 namespace LanPlayServer.ApiServer
 {
-    class ApiSession : HttpSession
+    internal class ApiSession : HttpSession
     {
-        readonly LdnServer.LdnServer _ldnServer;
+        private readonly LdnServer.LdnServer _ldnServer;
 
         public ApiSession(HttpServer server, LdnServer.LdnServer ldnServer) : base(server)
         {

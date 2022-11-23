@@ -3,7 +3,7 @@
 namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x30)]
-    struct CommonNetworkInfo
+    internal struct CommonNetworkInfo
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
         public byte[] MacAddress;
