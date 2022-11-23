@@ -1,8 +1,10 @@
-﻿using Ryujinx.HLE.HOS.Services.Ldn.Types;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using LanPlayServer.LdnServer;
+using LanPlayServer.LdnServer.Types;
+using LanPlayServer.Utils;
 
 namespace LanPlayServer
 {
@@ -25,8 +27,8 @@ namespace LanPlayServer
             Console.WriteLine();
             Console.WriteLine("- Informations");
 
-            LdnServer     ldnServer = new LdnServer(IPAddress.Any, portLdn);
-            ApiServer apiServer = new ApiServer(IPAddress.Any, portApi, ldnServer);
+            LdnServer.LdnServer     ldnServer = new LdnServer.LdnServer(IPAddress.Any, portLdn);
+            ApiServer.ApiServer apiServer = new ApiServer.ApiServer(IPAddress.Any, portApi, ldnServer);
 
             Console.Write($"    LdnServer (port: {portLdn}) starting...");
             ldnServer.Start();
@@ -91,7 +93,7 @@ namespace LanPlayServer
 #endif
         }
 
-        static bool RestartLdnServer(LdnServer ldnServer)
+        static bool RestartLdnServer(LdnServer.LdnServer ldnServer)
         {
             Console.Write("    !restart-ldn: LDN Server restarting...");
             ldnServer.Restart();
@@ -100,7 +102,7 @@ namespace LanPlayServer
             return true;
         }
 
-        static bool RestartApiServer(ApiServer apiServer)
+        static bool RestartApiServer(ApiServer.ApiServer apiServer)
         {
             Console.Write("    !restart-api: API Server restarting...");
             apiServer.Restart();
@@ -110,7 +112,7 @@ namespace LanPlayServer
         }
 
         // TODO: Maybe handle that in the API with a password or something ?
-        static bool List(LdnServer server)
+        static bool List(LdnServer.LdnServer server)
         {
             KeyValuePair<string, HostedGame>[] games = server.All();
 

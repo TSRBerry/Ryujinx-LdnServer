@@ -1,4 +1,4 @@
-﻿namespace LanPlayServer
+﻿namespace LanPlayServer.ApiServer
 {
     static class ApiEndpoints
     {

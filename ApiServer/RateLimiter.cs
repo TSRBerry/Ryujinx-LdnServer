@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 
-namespace LanPlayServer
+namespace LanPlayServer.ApiServer
 {
     class RateLimiterBucket
     {

@@ -1,15 +1,15 @@
-﻿using NetCoreServer;
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using NetCoreServer;
 
-namespace LanPlayServer
+namespace LanPlayServer.ApiServer
 {
     class ApiServer : HttpServer
     {
-        readonly LdnServer _ldnServer;
+        readonly LdnServer.LdnServer _ldnServer;
 
-        public ApiServer(IPAddress address, int port, LdnServer ldnServer) : base(address, port)
+        public ApiServer(IPAddress address, int port, LdnServer.LdnServer ldnServer) : base(address, port)
         {
             _ldnServer = ldnServer;
         }

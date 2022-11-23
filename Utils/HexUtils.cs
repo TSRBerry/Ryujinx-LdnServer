@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace LanPlayServer
+namespace LanPlayServer.Utils
 {
     public static class HexUtils
     {

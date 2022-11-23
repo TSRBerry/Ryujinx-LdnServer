@@ -1,9 +1,10 @@
 ﻿using LanPlayServer.Network.Types;
-using Ryujinx.HLE.HOS.Services.Ldn.Types;
 using System;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Threading;
+using LanPlayServer.LdnServer;
+using LanPlayServer.LdnServer.Types;
 
 namespace LanPlayServer.Network
 {

@@ -1,15 +1,15 @@
-﻿using LanPlayServer.Network;
-using LanPlayServer.Network.Types;
-using Ryujinx.HLE.HOS.Services.Ldn.Types;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using LanPlayServer.LdnServer.Types;
+using LanPlayServer.Network;
+using LanPlayServer.Network.Types;
 using System.Threading.Tasks;
 
-namespace LanPlayServer
+namespace LanPlayServer.LdnServer
 {
     enum GameLockReason
     {
@@ -351,7 +351,7 @@ namespace LanPlayServer
             {
                 // If they sent from a connection bound on 0.0.0.0, make others see it as them.
                 info.SourceIpV4 = sender.IpAddress;
-            } 
+            }
             else if (info.SourceIpV4 != sender.IpAddress)
             {
                 // Can't pretend to be somebody else.
@@ -379,7 +379,7 @@ namespace LanPlayServer
             else
             {
                 LdnSession target = _players.FirstOrDefault(player => player.IpAddress == destIp);
-                
+
                 if (target != null)
                 {
                     action(target);
@@ -407,7 +407,7 @@ namespace LanPlayServer
 
                     ExitLock();
                 }
-            } 
+            }
             else
             {
                 sender.SendAsync(_protocol.Encode(PacketId.NetworkError, new NetworkErrorMessage() { Error = NetworkError.RejectFailed }));

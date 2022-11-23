@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LanPlayServer
+namespace LanPlayServer.ApiServer.Types
 {
     public class GameAnalytics
     {

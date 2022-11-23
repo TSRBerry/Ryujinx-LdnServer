@@ -1,8 +1,4 @@
-﻿using LanPlayServer.Network;
-using LanPlayServer.Network.Types;
-using NetCoreServer;
-using Ryujinx.HLE.HOS.Services.Ldn.Types;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -10,8 +6,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using LanPlayServer.LdnServer.Types;
+using LanPlayServer.Network;
+using LanPlayServer.Network.Types;
+using LanPlayServer.Utils;
+using NetCoreServer;
 
-namespace LanPlayServer
+namespace LanPlayServer.LdnServer
 {
     class LdnSession : TcpSession
     {

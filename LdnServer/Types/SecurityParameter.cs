@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Ryujinx.HLE.HOS.Services.Ldn.Types
+namespace LanPlayServer.LdnServer.Types
 {
     [StructLayout(LayoutKind.Sequential, Size = 0x20)]
     struct SecurityParameter

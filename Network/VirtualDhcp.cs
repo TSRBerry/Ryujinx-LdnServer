@@ -1,10 +1,8 @@
-﻿using Ryujinx.HLE.HOS.Services.Ldn.Types;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using LanPlayServer.LdnServer.Types;
 
-namespace LanPlayServer
+namespace LanPlayServer.Network
 {
     /// <summary>
     /// Try to give clients unique virtual IPs that haven't been used before.

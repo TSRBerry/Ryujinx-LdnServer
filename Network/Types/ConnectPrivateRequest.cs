@@ -1,5 +1,5 @@
-﻿using Ryujinx.HLE.HOS.Services.Ldn.Types;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
+using LanPlayServer.LdnServer.Types;
 
 namespace LanPlayServer.Network.Types
 {

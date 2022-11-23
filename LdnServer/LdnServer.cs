@@ -1,6 +1,4 @@
-﻿using NetCoreServer;
-using Ryujinx.HLE.HOS.Services.Ldn.Types;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,8 +6,10 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using LanPlayServer.LdnServer.Types;
+using NetCoreServer;
 
-namespace LanPlayServer
+namespace LanPlayServer.LdnServer
 {
     class LdnServer : TcpServer
     {

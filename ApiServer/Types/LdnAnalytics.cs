@@ -1,4 +1,4 @@
-﻿namespace LanPlayServer
+﻿namespace LanPlayServer.ApiServer.Types
 {
     public class LdnAnalytics
     {

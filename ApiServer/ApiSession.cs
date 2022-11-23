@@ -1,20 +1,23 @@
-﻿using NetCoreServer;
-using Ryujinx.HLE.HOS.Services.Ldn.Types;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using LanPlayServer.ApiServer.Types;
+using LanPlayServer.LdnServer;
+using LanPlayServer.LdnServer.Types;
+using LanPlayServer.Utils;
+using NetCoreServer;
 
-namespace LanPlayServer
+namespace LanPlayServer.ApiServer
 {
     class ApiSession : HttpSession
     {
-        readonly LdnServer _ldnServer;
+        readonly LdnServer.LdnServer _ldnServer;
 
-        public ApiSession(HttpServer server, LdnServer ldnServer) : base(server)
+        public ApiSession(HttpServer server, LdnServer.LdnServer ldnServer) : base(server)
         {
             _ldnServer = ldnServer;
 

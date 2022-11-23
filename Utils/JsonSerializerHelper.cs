@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace LanPlayServer
+namespace LanPlayServer.Utils
 {
     public static class JsonSerializerHelper
     {
