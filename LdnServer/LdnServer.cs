@@ -7,25 +7,49 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using LanPlayServer.LdnServer.Types;
+using LanPlayServer.Network;
+using LanPlayServer.Network.Types;
 using NetCoreServer;
 
 namespace LanPlayServer.LdnServer
 {
-    internal class LdnServer : TcpServer
+    internal class LdnServer : UdpServer
     {
-        public static readonly int InactivityPingFrequency = 10000;
+        public const int InactivityPingFrequency = 10000;
 
-        public ConcurrentDictionary<string, HostedGame> HostedGames = new ConcurrentDictionary<string, HostedGame>();
-        public MacAddressMemory MacAddresses { get; } = new MacAddressMemory();
+        private RyuLdnProtocol _protocol;
+        private Dictionary<EndPoint, LdnSession> _sessions = new();
+
+        public ConcurrentDictionary<string, HostedGame> HostedGames = new();
+        public MacAddressMemory MacAddresses { get; } = new();
         public bool UseProxy => true;
 
-        private CancellationTokenSource _cancel = new CancellationTokenSource();
+        private CancellationTokenSource _cancel = new();
 
         public LdnServer(IPAddress address, int port) : base(address, port)
-        { 
-            OptionNoDelay = true;
+        {
+            _protocol = new RyuLdnProtocol();
+
+            _protocol.Initialize += OnSessionInitialize;
 
             Task.Run(BackgroundPingTask);
+        }
+
+        private void OnSessionInitialize(LdnHeader header, InitializeMessage msg, EndPoint endPoint)
+        {
+            _sessions.Add(endPoint, new LdnSession(this, endPoint, msg));
+        }
+
+        protected override void OnReceived(EndPoint endpoint, byte[] buffer, long offset, long size)
+        {
+            if (_sessions.ContainsKey(endpoint))
+            {
+                _sessions[endpoint].OnReceived(buffer, offset, size);
+            }
+            else
+            {
+                _protocol.Read(buffer, offset, size, endpoint);
+            }
         }
 
         public HostedGame CreateGame(string id, NetworkInfo info, AddressList dhcpConfig, string oldOwnerID)
@@ -168,11 +192,6 @@ namespace LanPlayServer.LdnServer
             removed?.Close();
         }
 
-        protected override TcpSession CreateSession()
-        { 
-            return new LdnSession(this);
-        }
-
         protected override void OnError(SocketError error)
         {
             Console.WriteLine($"LDN TCP server caught an error with code {error}");
@@ -189,9 +208,9 @@ namespace LanPlayServer.LdnServer
         {
             while (!IsDisposed)
             {
-                foreach (KeyValuePair<Guid, TcpSession> session in Sessions)
+                foreach (var session in _sessions)
                 {
-                    (session.Value as LdnSession).Ping();
+                    session.Value.Ping();
                 }
 
                 try

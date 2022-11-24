@@ -1,6 +1,7 @@
 ﻿using LanPlayServer.Network.Types;
 using System;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using LanPlayServer.LdnServer;
@@ -17,10 +18,10 @@ namespace LanPlayServer.Network
         private readonly int _headerSize = Marshal.SizeOf<LdnHeader>();
 
         private byte[] _buffer    = new byte[MaxPacketSize];
-        private int    _bufferEnd = 0;
+        private long    _bufferEnd = 0;
 
         // Client Packets.
-        public event Action<LdnHeader, InitializeMessage> Initialize;
+        public event Action<LdnHeader, InitializeMessage, EndPoint> Initialize;
         public event Action<LdnHeader, PassphraseMessage> Passphrase;
         public event Action<LdnHeader, NetworkInfo> Connected;
         public event Action<LdnHeader, NetworkInfo> SyncNetwork;
@@ -57,9 +58,9 @@ namespace LanPlayServer.Network
 
         public event Action<LdnHeader> Any;
 
-        public ConcurrentQueue<(LdnHeader, byte[])> _messages = new ConcurrentQueue<(LdnHeader, byte[])>();
-        public Thread _consumerThread;
-        public AutoResetEvent _messageReady = new AutoResetEvent(false);
+        private ConcurrentQueue<(LdnHeader, byte[], EndPoint)> _messages = new();
+        private Thread _consumerThread;
+        private AutoResetEvent _messageReady = new(false);
         private bool _active = true;
 
         public RyuLdnProtocol(bool withConsumerThread = true)
@@ -96,9 +97,9 @@ namespace LanPlayServer.Network
             _bufferEnd = 0;
         }
 
-        public void Read(byte[] data, int offset, int size)
+        public void Read(byte[] data, long offset, long size, EndPoint endPoint = null)
         {
-            int index = 0;
+            long index = 0;
 
             while (index < size)
             {
@@ -106,7 +107,7 @@ namespace LanPlayServer.Network
                 {
                     // Assemble the header first.
 
-                    int copyable = Math.Min(size - index, Math.Min(size, _headerSize - _bufferEnd));
+                    long copyable = Math.Min(size - index, Math.Min(size, _headerSize - _bufferEnd));
 
                     Array.Copy(data, index + offset, _buffer, _bufferEnd, copyable);
 
@@ -137,7 +138,7 @@ namespace LanPlayServer.Network
                         throw new InvalidOperationException($"Max packet size { MaxPacketSize } exceeded.");
                     }
 
-                    int copyable = Math.Min(size - index, Math.Min(size, finalSize - _bufferEnd));
+                    long copyable = Math.Min(size - index, Math.Min(size, finalSize - _bufferEnd));
 
                     Array.Copy(data, index + offset, _buffer, _bufferEnd, copyable);
 
@@ -152,7 +153,7 @@ namespace LanPlayServer.Network
 
                         Array.Copy(_buffer, _headerSize, ldnData, 0, ldnData.Length);
 
-                        DecodeAndHandleDeferred(ldnHeader, ldnData);
+                        DecodeAndHandleDeferred(ldnHeader, ldnData, endPoint);
 
                         Reset();
                     }
@@ -180,13 +181,13 @@ namespace LanPlayServer.Network
             return (LdnHelper.FromBytes<T>(data), remainder);
         }
 
-        private void DecodeAndHandleDeferred(LdnHeader header, byte[] data)
+        private void DecodeAndHandleDeferred(LdnHeader header, byte[] data, EndPoint endPoint = null)
         {
-            _messages.Enqueue((header, data));
+            _messages.Enqueue((header, data, endPoint));
             _messageReady.Set();
         }
 
-        private void DecodeAndHandle(LdnHeader header, byte[] data)
+        private void DecodeAndHandle(LdnHeader header, byte[] data, EndPoint endPoint = null)
         {
             Any?.Invoke(header);
 
@@ -195,7 +196,7 @@ namespace LanPlayServer.Network
                 // Client Packets.
                 case PacketId.Initialize:
                     {
-                        Initialize?.Invoke(header, ParseDefault<InitializeMessage>(data));
+                        Initialize?.Invoke(header, ParseDefault<InitializeMessage>(data), endPoint);
 
                         break;
                     }
@@ -360,8 +361,6 @@ namespace LanPlayServer.Network
 
                         break;
                     }
-
-                default: break;
             }
         }
 

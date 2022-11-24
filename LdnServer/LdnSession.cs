@@ -10,13 +10,15 @@ using LanPlayServer.LdnServer.Types;
 using LanPlayServer.Network;
 using LanPlayServer.Network.Types;
 using LanPlayServer.Utils;
-using NetCoreServer;
 
 namespace LanPlayServer.LdnServer
 {
-    internal class LdnSession : TcpSession
+    internal class LdnSession
     {
         private const int ExternalProxyTimeout = 2;
+
+        internal EndPoint Endpoint;
+        private Guid _id;
 
         public HostedGame CurrentGame { get; set; }
         public byte[]     MacAddress  { get; private set; }
@@ -24,9 +26,9 @@ namespace LanPlayServer.LdnServer
         public uint       RealIpAddress { get; private set; }
         public string     Passphrase  { get; private set; } = "";
 
-        public string     StringId => Id.ToString().Replace("-", "");
+        public string     StringId => _id.ToString().Replace("-", "");
 
-        private LdnServer      _tcpServer;
+        private LdnServer      _server;
         private RyuLdnProtocol _protocol;
         private NetworkInfo[]  _scanBuffer = new NetworkInfo[1];
 
@@ -41,13 +43,15 @@ namespace LanPlayServer.LdnServer
 
         private bool _initialized = false;
         private bool _disconnected = false;
-        private object _connectionLock = new object();
+        private object _connectionLock = new();
 
-        private bool _connected = false;
-
-        public LdnSession(LdnServer server) : base(server)
+        public LdnSession(LdnServer server, EndPoint endpoint, InitializeMessage msg)
         {
-            _tcpServer = server;
+            _server = server;
+            Endpoint = endpoint;
+            _id = Guid.NewGuid();
+
+            RealIpAddress = GetSessionIp();
 
             MacAddress = new byte[6];
 
@@ -55,7 +59,6 @@ namespace LanPlayServer.LdnServer
 
             _protocol = new RyuLdnProtocol();
 
-            _protocol.Initialize               += HandleInitialize;
             _protocol.Passphrase               += HandlePassphrase;
             _protocol.CreateAccessPoint        += HandleCreateAccessPoint;
             _protocol.CreateAccessPointPrivate += HandleCreateAccessPointPrivate;
@@ -76,6 +79,15 @@ namespace LanPlayServer.LdnServer
             _protocol.Ping               += HandlePing;
 
             //_protocol.Any += HandleAny;
+
+            HandleInitialize(msg);
+
+            Console.WriteLine($"LDN TCP session with Id {_id} connected! ({PrintIp()})");
+        }
+
+        internal void SendAsync(byte[] buffer)
+        {
+            _server.SendAsync(Endpoint, buffer);
         }
 
         private void HandleAny(LdnHeader obj)
@@ -93,8 +105,8 @@ namespace LanPlayServer.LdnServer
             if (_waitingPingID != -1)
             {
                 // The last ping was not responded to. Force a disconnect (async).
-                Console.WriteLine($"Closing session with Id {Id} due to idle.");
-                Task.Run(Disconnect);
+                Console.WriteLine($"Closing session with Id {_id} due to idle.");
+                Task.Run(OnDisconnected);
             }
             else
             {
@@ -121,7 +133,7 @@ namespace LanPlayServer.LdnServer
 
             if (game?.Owner == this)
             {
-                _tcpServer.CloseGame(game.Id);
+                _server.CloseGame(game.Id);
             }
         }
 
@@ -134,14 +146,14 @@ namespace LanPlayServer.LdnServer
             }
         }
 
-        private void HandleInitialize(LdnHeader header, InitializeMessage message)
+        private void HandleInitialize(InitializeMessage message)
         {
             if (_initialized)
             {
                 return;
             }
 
-            MacAddress = _tcpServer.MacAddresses.TryFind(LdnHelper.ByteArrayToString(message.Id), message.MacAddress, StringId);
+            MacAddress = _server.MacAddresses.TryFind(LdnHelper.ByteArrayToString(message.Id), message.MacAddress, StringId);
 
             SendAsync(_protocol.Encode(PacketId.Initialize, new InitializeMessage() { Id = LdnHelper.StringToByteArray(StringId), MacAddress = MacAddress }));
 
@@ -202,27 +214,7 @@ namespace LanPlayServer.LdnServer
             CurrentGame?.HandleProxyConnect(this, header, message);
         }
 
-        protected override void OnConnected()
-        {
-            if (!_connected)
-            {
-                try
-                {
-                    RealIpAddress = GetSessionIp();
-                }
-                catch
-                {
-                    Console.WriteLine($"IP unavailable!");
-                    // Already disconnected?
-                }
-
-                Console.WriteLine($"LDN TCP session with Id {Id} connected! ({PrintIp()})");
-
-                _connected = true;
-            }
-        }
-
-        protected override void OnDisconnected()
+        public void OnDisconnected()
         {
             lock (_connectionLock)
             {
@@ -230,37 +222,30 @@ namespace LanPlayServer.LdnServer
                 DisconnectFromGame();
             }
 
-            Console.WriteLine($"LDN TCP session with Id {Id} disconnected! ({PrintIp()})");
+            Console.WriteLine($"LDN TCP session with Id {_id} disconnected! ({PrintIp()})");
 
             _protocol.Dispose();
         }
 
-        protected override void OnReceived(byte[] buffer, long offset, long size)
+        public void OnReceived(byte[] buffer, long offset, long size)
         {
             try
             {
-                OnConnected();
-
                 _protocol.Read(buffer, (int)offset, (int)size);
 
                 _lastMessageTicks = Stopwatch.GetTimestamp();
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Closing session with Id {Id} due to exception: {e}");
+                Console.WriteLine($"Closing session with Id {_id} due to exception: {e}");
 
-                Disconnect();
+                OnDisconnected();
             }
-        }
-
-        protected override void OnError(SocketError error)
-        {
-            Console.WriteLine($"LDN TCP session caught an error with code {error}");
         }
 
         private uint GetSessionIp()
         {
-            IPAddress remoteIp = ((IPEndPoint)Socket.RemoteEndPoint).Address;
+            IPAddress remoteIp = ((IPEndPoint)Endpoint).Address;
             byte[]    bytes    = remoteIp.GetAddressBytes();
 
             Array.Reverse(bytes);
@@ -270,7 +255,7 @@ namespace LanPlayServer.LdnServer
 
         public bool SetIpV4(uint ip, uint subnet, bool internalProxy)
         {
-            if (_tcpServer.UseProxy)
+            if (_server.UseProxy)
             {
                 IpAddress = ip;
 
@@ -296,7 +281,7 @@ namespace LanPlayServer.LdnServer
 
         private void HandleScan(LdnHeader ldnPacket, ScanFilter filter)
         {
-            int games = _tcpServer.Scan(ref _scanBuffer, filter, Passphrase, CurrentGame);
+            int games = _server.Scan(ref _scanBuffer, filter, Passphrase, CurrentGame);
 
             for (int i = 0; i < games; i++)
             {
@@ -420,7 +405,7 @@ namespace LanPlayServer.LdnServer
             }
             */
 
-            HostedGame game = _tcpServer.CreateGame(id, networkInfo, dhcpConfig, userId);
+            HostedGame game = _server.CreateGame(id, networkInfo, dhcpConfig, userId);
 
             if (game == null)
             {
@@ -443,7 +428,7 @@ namespace LanPlayServer.LdnServer
             if (game == null)
             {
                 Console.WriteLine($"Null close: {id}");
-                _tcpServer.CloseGame(id);
+                _server.CloseGame(id);
             }
         }
 
@@ -456,14 +441,14 @@ namespace LanPlayServer.LdnServer
             IPEndPoint searchEndpoint;
             try
             {
-                searchEndpoint = Socket.RemoteEndPoint as IPEndPoint;
+                searchEndpoint = Endpoint as IPEndPoint;
             }
             catch
             {
                 return false;
             }
 
-            IPEndPoint ep = new IPEndPoint(searchEndpoint.Address, port);
+            IPEndPoint ep = new IPEndPoint(searchEndpoint!.Address, port);
 
             NetCoreServer.TcpClient client = new NetCoreServer.TcpClient(ep);
             client.ConnectAsync();
@@ -489,7 +474,7 @@ namespace LanPlayServer.LdnServer
 
         private void ConnectImpl(string id, UserConfig userConfig, uint localCommunicationVersion)
         {
-            HostedGame game = _tcpServer.FindGame(id);
+            HostedGame game = _server.FindGame(id);
 
             if (game != null)
             {

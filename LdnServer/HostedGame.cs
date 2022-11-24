@@ -189,7 +189,7 @@ namespace LanPlayServer.LdnServer
                 {
                     IsP2P = true;
 
-                    IPAddress address = (session.Socket.RemoteEndPoint as IPEndPoint).Address;
+                    IPAddress address = (session.Endpoint as IPEndPoint).Address;
 
                     _externalConfig = new ExternalProxyConfig()
                     {
@@ -219,7 +219,7 @@ namespace LanPlayServer.LdnServer
 
         private void InitExternalProxy(LdnSession session)
         {
-            IPAddress address          = (session.Socket.RemoteEndPoint as IPEndPoint).Address;
+            IPAddress address          = (session.Endpoint as IPEndPoint).Address;
             byte[]    addressBytes     = AddressTo16Byte(address);
             bool      sessionIsPrivate = address.AddressFamily == _externalConfig.AddressFamily && addressBytes.SequenceEqual(_externalConfig.ProxyIp);
             byte[]    token            = LdnHelper.StringToByteArray(Guid.NewGuid().ToString().Replace("-", ""));
