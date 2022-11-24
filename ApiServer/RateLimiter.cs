@@ -15,9 +15,9 @@ namespace LanPlayServer.ApiServer
         private static uint   _rateLimit;
         private static double _rateLimitTime;
 
-        private static readonly Dictionary<IPAddress, RateLimiterBucket> _rateLimiterBucket = new Dictionary<IPAddress, RateLimiterBucket>();
+        private static readonly Dictionary<IPAddress, RateLimiterBucket> _rateLimiterBucket = new();
 
-        private static readonly object lockObj = new object();
+        private static readonly object lockObj = new();
 
         public static void SetRateLimit(uint rateLimit, double rateLimitTime)
         {

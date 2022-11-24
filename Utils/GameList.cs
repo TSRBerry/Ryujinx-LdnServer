@@ -28,7 +28,7 @@ namespace LanPlayServer.Utils
         // We still need to be able to provide game specific info, as we might want to parse AdvertiseData or do special things for different games.
         // (eg. a mode to regulate framerate to keep sync in Mario Kart would be nice)
 
-        private static Dictionary<ulong, Game> _games = new Dictionary<ulong, Game>();
+        private static Dictionary<ulong, Game> _games = new();
 
         static GameList() {
             try
