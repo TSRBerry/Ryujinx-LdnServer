@@ -191,6 +191,8 @@ namespace LanPlayServer.Network
         {
             Any?.Invoke(header);
 
+            Console.WriteLine($"LdnServer> Decoded packet: {(PacketId)header.Type}");
+
             switch ((PacketId)header.Type)
             {
                 // Client Packets.

@@ -44,10 +44,12 @@ namespace LanPlayServer.LdnServer
         {
             if (_sessions.ContainsKey(endpoint))
             {
+                Console.WriteLine($"LdnServer> Redirecting received message from {endpoint}");
                 _sessions[endpoint].OnReceived(buffer, offset, size);
             }
             else
             {
+                Console.WriteLine($"LdnServer> Message received from {endpoint}");
                 _protocol.Read(buffer, offset, size, endpoint);
             }
         }
