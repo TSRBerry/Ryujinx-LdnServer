@@ -190,7 +190,7 @@ namespace LanPlayServer
                 {
                     IsP2P = true;
 
-                    IPAddress address = (session.Socket.RemoteEndPoint as IPEndPoint).Address;
+                    IPAddress address = session.Endpoint.Address;
 
                     _externalConfig = new ExternalProxyConfig()
                     {
@@ -219,7 +219,7 @@ namespace LanPlayServer
 
         private void InitExternalProxy(LdnSession session)
         {
-            IPAddress  address          = (session.Socket.RemoteEndPoint as IPEndPoint).Address;
+            IPAddress  address          = session.Endpoint.Address;
             Span<byte> addressBytes     = AddressTo16Byte(address).AsSpan();
             bool       sessionIsPrivate = address.AddressFamily == _externalConfig.AddressFamily && addressBytes.SequenceEqual(_externalConfig.ProxyIp.AsSpan());
             byte[]     token            = Convert.FromHexString(Guid.NewGuid().ToString().Replace("-", ""));
@@ -281,6 +281,7 @@ namespace LanPlayServer
             _info.Ldn.Nodes[nodeId] = node;
 
             _lockReason = GameLockReason.ConnectProxy;
+
             if (IsP2P)
             {
                 InitExternalProxy(session);
@@ -586,14 +587,14 @@ namespace LanPlayServer
 
         private void BroadcastNetworkInfoInLock()
         {
-            BroadcastInLock(_protocol.Encode(PacketId.SyncNetwork, _info));
+            BroadcastInLock(PacketId.SyncNetwork, _protocol.Encode(PacketId.SyncNetwork, _info));
         }
 
-        private void BroadcastInLock(byte[] buffer)
+        private void BroadcastInLock(PacketId packetId, byte[] buffer)
         {
             foreach (LdnSession player in _players)
             {
-                player.SendAsync(buffer);
+                player.SendAsyncSafe(packetId, buffer);
             }
         }
 
@@ -613,7 +614,7 @@ namespace LanPlayServer
 
                 _closed = true;
 
-                BroadcastInLock(_protocol.Encode(PacketId.Disconnect, new DisconnectMessage()));
+                BroadcastInLock(PacketId.Disconnect, _protocol.Encode(PacketId.Disconnect, new DisconnectMessage()));
 
                 ExitLock();
             }

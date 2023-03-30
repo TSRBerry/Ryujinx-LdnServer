@@ -7,24 +7,69 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using LanPlayServer.Network;
+using LanPlayServer.Network.Types;
 
 namespace LanPlayServer
 {
-    class LdnServer : TcpServer
+    class LdnServer : UdpServer
     {
-        public static readonly int InactivityPingFrequency = 10000;
+        public const int InactivityPingFrequency = 10000;
 
-        public ConcurrentDictionary<string, HostedGame> HostedGames = new ConcurrentDictionary<string, HostedGame>();
-        public MacAddressMemory MacAddresses { get; } = new MacAddressMemory();
+        private readonly RyuLdnProtocol _protocol = new();
+
+        private readonly Dictionary<IPEndPoint, LdnSession> Sessions = new();
+
+        public readonly ConcurrentDictionary<string, HostedGame> HostedGames = new();
+        public MacAddressMemory MacAddresses { get; } = new();
         public bool UseProxy => true;
 
-        private CancellationTokenSource _cancel = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancel = new();
 
         public LdnServer(IPAddress address, int port) : base(address, port)
         {
-            OptionNoDelay = true;
-
+            _protocol.Initialize += OnInitializeSession;
+            _protocol.Any += (endpoint, header) => Console.WriteLine($"[LdnServer] Received '{(PacketId)header.Type}' packet from: {endpoint}");
             Task.Run(BackgroundPingTask);
+        }
+
+        protected override void OnReceived(EndPoint endpoint, byte[] buffer, long offset, long size)
+        {
+            ReceiveAsync();
+
+            if (Sessions.TryGetValue((IPEndPoint)endpoint, out LdnSession session))
+            {
+                // Console.WriteLine($"[LdnServer] Session ({endpoint}) received packet.");
+                session.OnReceived(buffer, offset, size);
+            }
+            else
+            {
+                // Console.WriteLine("[LdnServer] Server received packet.");
+                try
+                {
+                    _protocol.Read((IPEndPoint)endpoint, buffer, (int)offset, (int)size);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"[LdnServer] Error decoding packet from {endpoint}: {e}");
+                }
+            }
+        }
+
+        protected override void OnSent(EndPoint endpoint, long sent)
+        {
+            Console.WriteLine($"[LdnServer] Sent packet of length '{sent}' to {endpoint}");
+        }
+
+        private void OnInitializeSession(IPEndPoint endpoint, LdnHeader header, InitializeMessage message)
+        {
+            Console.WriteLine($"[LdnServer] Creating Session for '{endpoint}'...");
+            Sessions.Add(endpoint, new LdnSession(endpoint, this, message));
+        }
+
+        internal void DisconnectSession(LdnSession session)
+        {
+            Sessions.Remove(session.Endpoint);
         }
 
         public HostedGame CreateGame(string id, NetworkInfo info, AddressList dhcpConfig, string oldOwnerID)
@@ -33,7 +78,7 @@ namespace LanPlayServer
             HostedGame game = new HostedGame(id, info, dhcpConfig);
             bool idTaken = false;
 
-            HostedGames.AddOrUpdate(id, game, (id, oldGame) =>
+            HostedGames.AddOrUpdate(id, game, (_, oldGame) =>
             {
                 if (oldGame.OwnerId == oldOwnerID)
                 {
@@ -169,14 +214,19 @@ namespace LanPlayServer
             removed?.Close();
         }
 
-        protected override TcpSession CreateSession()
-        {
-            return new LdnSession(this);
-        }
+        // protected override TcpSession CreateSession()
+        // {
+        //     return new LdnSession(this);
+        // }
 
         protected override void OnError(SocketError error)
         {
-            Console.WriteLine($"LDN TCP server caught an error with code {error}");
+            Console.WriteLine($"LDN UDP server caught an error with code {error}");
+        }
+
+        protected override void OnStarted()
+        {
+            ReceiveAsync();
         }
 
         public override bool Stop()
@@ -190,9 +240,9 @@ namespace LanPlayServer
         {
             while (!IsDisposed)
             {
-                foreach (KeyValuePair<Guid, TcpSession> session in Sessions)
+                foreach (KeyValuePair<IPEndPoint, LdnSession> session in Sessions)
                 {
-                    (session.Value as LdnSession).Ping();
+                    session.Value.Ping();
                 }
 
                 try

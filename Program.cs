@@ -23,12 +23,12 @@ namespace LanPlayServer
             Console.WriteLine();
             Console.WriteLine( "_________________________________________________________________________________");
             Console.WriteLine();
-            Console.WriteLine("- Informations");
+            Console.WriteLine("- Information");
 
-            LdnServer     ldnServer = new LdnServer(IPAddress.Any, portLdn);
+            LdnServer ldnServer = new LdnServer(IPAddress.Any, portLdn);
             ApiServer apiServer = new ApiServer(IPAddress.Any, portApi, ldnServer);
 
-            Console.Write($"    LdnServer (port: {portLdn}) starting...");
+            Console.Write($"    LdnServer (port: {portLdn}/udp) starting...");
             ldnServer.Start();
             Console.WriteLine(" Done!");
 
@@ -37,6 +37,7 @@ namespace LanPlayServer
             Console.WriteLine(" Done!");
 #if DISABLE_CLI
             Console.WriteLine("CLI disabled (docker mode)");
+            Console.WriteLine("----- UDP TEST -----");
 
             for (;;)
             {

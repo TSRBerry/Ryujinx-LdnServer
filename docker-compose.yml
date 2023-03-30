@@ -3,7 +3,7 @@ version: '3'
 services:
   ldn-server:
     build: ./
-    restart: always
+    restart: unless-stopped
     ports:
-      - 30456:30456
-      - 8080:8080
+      - "30456:30456/udp"
+      - "8080:8080"

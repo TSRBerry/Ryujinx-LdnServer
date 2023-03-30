@@ -1,61 +1,63 @@
 ﻿using LanPlayServer.Network;
 using LanPlayServer.Network.Types;
-using NetCoreServer;
 using Ryujinx.HLE.HOS.Services.Ldn.Types;
 using System;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using Ryujinx.Common.Memory;
 
 namespace LanPlayServer
 {
-    class LdnSession : TcpSession
+    class LdnSession
     {
         private const int ExternalProxyTimeout = 2;
 
+        public readonly Guid Id = Guid.NewGuid();
+        public readonly IPEndPoint Endpoint;
+
         public HostedGame   CurrentGame { get; set; }
-        public Array6<byte> MacAddress  { get; private set; }
+        public Array6<byte> MacAddress  { get; }
         public uint         IpAddress   { get; private set; }
         public uint         RealIpAddress { get; private set; }
         public string       Passphrase  { get; private set; } = "";
 
         public string     StringId => Id.ToString().Replace("-", "");
 
-        private LdnServer      _tcpServer;
-        private RyuLdnProtocol _protocol;
-        private NetworkInfo[]  _scanBuffer = new NetworkInfo[1];
+        private readonly LdnServer      _server;
+        private readonly RyuLdnProtocol _protocol;
+        private NetworkInfo[] _scanBuffer = new NetworkInfo[1];
 
+        private PacketId? _receivePacketType = null;
+
+        private readonly AutoResetEvent _packetReceived = new(false);
+        private readonly ManualResetEvent _proxyConfigReceived = new(false);
+        private readonly AutoResetEvent _testPingReceived = new(false);
         private long _lastMessageTicks = Stopwatch.GetTimestamp();
         private int _waitingPingID = -1;
-        private byte _pingId = 0;
+        private byte _pingId;
 
         /// <summary>
         /// Node ID when in a game. This does not change while the user is still in that game.
         /// </summary>
         public int NodeId { get; set; }
 
-        private bool _initialized = false;
-        private bool _disconnected = false;
-        private object _connectionLock = new object();
+        private bool _disconnected;
+        private readonly object _connectionLock = new();
 
-        private bool _connected = false;
+        private bool _connected;
 
-        public LdnSession(LdnServer server) : base(server)
+        public LdnSession(IPEndPoint endpoint, LdnServer server, InitializeMessage message)
         {
-            _tcpServer = server;
+            Endpoint = endpoint;
+            _server = server;
 
-            MacAddress = new Array6<byte>();
-
-            new Random().NextBytes(MacAddress.AsSpan());
+            MacAddress = _server.MacAddresses.TryFind(Convert.ToHexString(message.Id.AsSpan()), message.MacAddress.AsSpan(), StringId);
 
             _protocol = new RyuLdnProtocol();
 
-            _protocol.Initialize               += HandleInitialize;
+            // _protocol.Initialize               += HandleInitialize;
             _protocol.Passphrase               += HandlePassphrase;
             _protocol.CreateAccessPoint        += HandleCreateAccessPoint;
             _protocol.CreateAccessPointPrivate += HandleCreateAccessPointPrivate;
@@ -67,6 +69,7 @@ namespace LanPlayServer
             _protocol.ConnectPrivate           += HandleConnectPrivate;
             _protocol.Disconnected             += HandleDisconnect;
 
+            _protocol.ProxyConfig       += HandleProxyConfig;
             _protocol.ProxyConnect      += HandleProxyConnect;
             _protocol.ProxyConnectReply += HandleProxyConnectReply;
             _protocol.ProxyData         += HandleProxyData;
@@ -74,13 +77,50 @@ namespace LanPlayServer
 
             _protocol.ExternalProxyState += HandleExternalProxyState;
             _protocol.Ping               += HandlePing;
+            _protocol.TestPing           += HandleTestPing;
 
-            //_protocol.Any += HandleAny;
+            _protocol.Any += HandleAny;
+
+            Array16<byte> id = new();
+            Convert.FromHexString(StringId).CopyTo(id.AsSpan());
+
+            SendAsync(_protocol.Encode(PacketId.Initialize, new InitializeMessage { Id = id, MacAddress = MacAddress }));
+
+            OnConnected();
         }
 
-        private void HandleAny(LdnHeader obj)
+        public bool SendAsync(byte[] buffer)
         {
-            Console.WriteLine($"  ({PrintIp()}) -> {(PacketId)obj.Type}");
+            Console.WriteLine($"[LdnSession] Sending packet to: {Endpoint}");
+
+            return _server.SendAsync(Endpoint, buffer);
+        }
+
+        public bool SendAsyncSafe(PacketId packetId, byte[] buffer)
+        {
+            _receivePacketType = packetId;
+
+            int numTries = 1;
+            bool success = false;
+            while (numTries < 3 && !success)
+            {
+                SendAsync(buffer);
+                success = _packetReceived.WaitOne(500);
+                numTries++;
+            }
+
+            _receivePacketType = null;
+
+            return success;
+        }
+
+        private void HandleAny(IPEndPoint endpoint, LdnHeader header)
+        {
+            Console.WriteLine($"[LdnSession] ({Endpoint}) -> {(PacketId)header.Type}");
+            if (_receivePacketType is not null && _receivePacketType == (PacketId)header.Type)
+            {
+                _packetReceived.Set();
+            }
         }
 
         private string PrintIp()
@@ -94,7 +134,7 @@ namespace LanPlayServer
             {
                 // The last ping was not responded to. Force a disconnect (async).
                 Console.WriteLine($"Closing session with Id {Id} due to idle.");
-                Task.Run(Disconnect);
+                Disconnect();
             }
             else
             {
@@ -107,6 +147,8 @@ namespace LanPlayServer
                     byte pingId = _pingId++;
 
                     _waitingPingID = pingId;
+
+                    Console.WriteLine($"[LdnSession] ({Endpoint}) Sending ping...");
 
                     SendAsync(_protocol.Encode(PacketId.Ping, new PingMessage { Id = pingId, Requester = 0 }));
                 }
@@ -121,7 +163,7 @@ namespace LanPlayServer
 
             if (game?.Owner == this)
             {
-                _tcpServer.CloseGame(game.Id);
+                _server.CloseGame(game.Id);
             }
         }
 
@@ -134,22 +176,22 @@ namespace LanPlayServer
             }
         }
 
-        private void HandleInitialize(LdnHeader header, InitializeMessage message)
-        {
-            if (_initialized)
-            {
-                return;
-            }
-
-            MacAddress = _tcpServer.MacAddresses.TryFind(Convert.ToHexString(message.Id.AsSpan()), message.MacAddress.AsSpan(), StringId);
-
-            Array16<byte> id = new();
-            Convert.FromHexString(StringId).CopyTo(id.AsSpan());
-
-            SendAsync(_protocol.Encode(PacketId.Initialize, new InitializeMessage() { Id = id, MacAddress = MacAddress }));
-
-            _initialized = true;
-        }
+        // private void HandleInitialize(LdnHeader header, InitializeMessage message)
+        // {
+        //     if (_initialized)
+        //     {
+        //         return;
+        //     }
+        //
+        //     MacAddress = _server.MacAddresses.TryFind(Convert.ToHexString(message.Id.AsSpan()), message.MacAddress.AsSpan(), StringId);
+        //
+        //     Array16<byte> id = new();
+        //     Convert.FromHexString(StringId).CopyTo(id.AsSpan());
+        //
+        //     SendAsync(_protocol.Encode(PacketId.Initialize, new InitializeMessage() { Id = id, MacAddress = MacAddress }));
+        //
+        //     _initialized = true;
+        // }
 
         private void HandlePassphrase(LdnHeader header, PassphraseMessage message)
         {
@@ -180,6 +222,11 @@ namespace LanPlayServer
             CurrentGame?.HandleSetAdvertiseData(this, header, data);
         }
 
+        private void HandleProxyConfig(LdnHeader header, ProxyConfig config)
+        {
+            _proxyConfigReceived.Set();
+        }
+
         private void HandleExternalProxyState(LdnHeader header, ExternalProxyConnectionState state)
         {
             CurrentGame?.HandleExternalProxyState(this, header, state);
@@ -205,7 +252,7 @@ namespace LanPlayServer
             CurrentGame?.HandleProxyConnect(this, header, message);
         }
 
-        protected override void OnConnected()
+        private void OnConnected()
         {
             if (!_connected)
             {
@@ -219,51 +266,51 @@ namespace LanPlayServer
                     // Already disconnected?
                 }
 
-                Console.WriteLine($"LDN TCP session with Id {Id} connected! ({PrintIp()})");
+                Console.WriteLine($"LDN UDP session with Id {Id} connected! ({PrintIp()})");
 
                 _connected = true;
             }
         }
 
-        protected override void OnDisconnected()
+        private void Disconnect()
         {
+            _server.DisconnectSession(this);
+
             lock (_connectionLock)
             {
                 _disconnected = true;
                 DisconnectFromGame();
             }
 
-            Console.WriteLine($"LDN TCP session with Id {Id} disconnected! ({PrintIp()})");
+            Console.WriteLine($"LDN UDP session with Id {Id} disconnected! ({PrintIp()})");
 
             _protocol.Dispose();
         }
 
-        protected override void OnReceived(byte[] buffer, long offset, long size)
+        public void OnReceived(byte[] buffer, long offset, long size)
         {
             try
             {
                 OnConnected();
 
-                _protocol.Read(buffer, (int)offset, (int)size);
+                _protocol.Read(Endpoint, buffer, (int)offset, (int)size);
 
                 _lastMessageTicks = Stopwatch.GetTimestamp();
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Closing session with Id {Id} due to exception: {e}");
-
-                Disconnect();
+                Console.WriteLine($"Caught exception for session with Id {Id}: {e}");
             }
         }
 
-        protected override void OnError(SocketError error)
-        {
-            Console.WriteLine($"LDN TCP session caught an error with code {error}");
-        }
+        // protected override void OnError(SocketError error)
+        // {
+        //     Console.WriteLine($"LDN TCP session caught an error with code {error}");
+        // }
 
         private uint GetSessionIp()
         {
-            IPAddress remoteIp = ((IPEndPoint)Socket.RemoteEndPoint).Address;
+            IPAddress remoteIp = Endpoint.Address;
             byte[]    bytes    = remoteIp.GetAddressBytes();
 
             Array.Reverse(bytes);
@@ -273,7 +320,7 @@ namespace LanPlayServer
 
         public bool SetIpV4(uint ip, uint subnet, bool internalProxy)
         {
-            if (_tcpServer.UseProxy)
+            if (_server.UseProxy)
             {
                 IpAddress = ip;
 
@@ -286,7 +333,14 @@ namespace LanPlayServer
                     };
 
                     // Tell the client about the proxy configuration.
-                    SendAsync(_protocol.Encode(PacketId.ProxyConfig, config));
+                    int proxyConfigTry = 0;
+                    bool configReceived = false;
+                    while (proxyConfigTry < 3 && !configReceived)
+                    {
+                        SendAsync(_protocol.Encode(PacketId.ProxyConfig, config));
+                        configReceived = _proxyConfigReceived.WaitOne(500);
+                        proxyConfigTry++;
+                    }
                 }
 
                 return true;
@@ -299,7 +353,7 @@ namespace LanPlayServer
 
         private void HandleScan(LdnHeader ldnPacket, ScanFilter filter)
         {
-            int games = _tcpServer.Scan(ref _scanBuffer, filter, Passphrase, CurrentGame);
+            int games = _server.Scan(ref _scanBuffer, filter, Passphrase, CurrentGame);
 
             for (int i = 0; i < games; i++)
             {
@@ -313,7 +367,7 @@ namespace LanPlayServer
 
         private void HandleCreateAccessPoint(LdnHeader ldnPacket, CreateAccessPointRequest request, byte[] advertiseData)
         {
-            if (CurrentGame != null || !_initialized)
+            if (CurrentGame != null)
             {
                 // Cannot create an access point while in a game.
                 SendAsync(_protocol.Encode(PacketId.NetworkError, new NetworkErrorMessage { Error = NetworkError.Unknown }));
@@ -330,7 +384,7 @@ namespace LanPlayServer
 
         private void HandleCreateAccessPointPrivate(LdnHeader ldnPacket, CreateAccessPointPrivateRequest request, byte[] advertiseData)
         {
-            if (CurrentGame != null || !_initialized)
+            if (CurrentGame != null)
             {
                 // Cannot create an access point while in a game.
                 SendAsync(_protocol.Encode(PacketId.NetworkError, new NetworkErrorMessage { Error = NetworkError.Unknown }));
@@ -382,7 +436,7 @@ namespace LanPlayServer
                 }
             };
 
-            Encoding.ASCII.GetBytes("12345678123456781234567812345678").CopyTo(networkInfo.Common.Ssid.Name.AsSpan());
+            "12345678123456781234567812345678"u8.ToArray().CopyTo(networkInfo.Common.Ssid.Name.AsSpan());
             advertiseData.CopyTo(networkInfo.Ldn.AdvertiseData.AsSpan());
 
             NodeInfo myInfo = new NodeInfo()
@@ -414,7 +468,7 @@ namespace LanPlayServer
             }
             */
 
-            HostedGame game = _tcpServer.CreateGame(id, networkInfo, dhcpConfig, userId);
+            HostedGame game = _server.CreateGame(id, networkInfo, dhcpConfig, userId);
 
             if (game == null)
             {
@@ -437,7 +491,15 @@ namespace LanPlayServer
             if (game == null)
             {
                 Console.WriteLine($"Null close: {id}");
-                _tcpServer.CloseGame(id);
+                _server.CloseGame(id);
+            }
+        }
+
+        private void HandleTestPing(IPEndPoint endpoint, LdnHeader header, PingMessage message)
+        {
+            if (message is { Id: 255, Requester: 255 })
+            {
+                _testPingReceived.Set();
             }
         }
 
@@ -447,33 +509,17 @@ namespace LanPlayServer
             // We don't need to send anything, just establish a TCP connection.
             // If that is not possible, then their external proxy isn't reachable from the internet.
 
-            IPEndPoint searchEndpoint;
-            try
+            IPEndPoint ep = new IPEndPoint(Endpoint.Address, port);
+
+            var client = new NetCoreServer.UdpClient(ep);
+
+            client.Send(_protocol.Encode(PacketId.Ping, new PingMessage {Id = 255, Requester = 0}));
+
+            if (_testPingReceived.WaitOne(ExternalProxyTimeout * 1000))
             {
-                searchEndpoint = Socket.RemoteEndPoint as IPEndPoint;
-            }
-            catch
-            {
-                return false;
-            }
+                client.Dispose();
 
-            IPEndPoint ep = new IPEndPoint(searchEndpoint.Address, port);
-
-            NetCoreServer.TcpClient client = new NetCoreServer.TcpClient(ep);
-            client.ConnectAsync();
-
-            long endTime = Stopwatch.GetTimestamp() + Stopwatch.Frequency * ExternalProxyTimeout;
-
-            while (Stopwatch.GetTimestamp() < endTime)
-            {
-                if (client.IsConnected)
-                {
-                    client.Dispose();
-
-                    return true;
-                }
-
-                Thread.Sleep(1);
+                return true;
             }
 
             client.Dispose();
@@ -483,7 +529,7 @@ namespace LanPlayServer
 
         private void ConnectImpl(string id, UserConfig userConfig, uint localCommunicationVersion)
         {
-            HostedGame game = _tcpServer.FindGame(id);
+            HostedGame game = _server.FindGame(id);
 
             if (game != null)
             {
@@ -539,13 +585,6 @@ namespace LanPlayServer
             uint           optionUnknown             = request.OptionUnknown;
             NetworkInfo    networkInfo               = request.NetworkInfo;
 
-            if (!_initialized)
-            {
-                SendAsync(_protocol.Encode(PacketId.NetworkError, new NetworkErrorMessage { Error = NetworkError.ConnectFailure }));
-
-                return;
-            }
-
             string id = Convert.ToHexString(networkInfo.NetworkId.SessionId.AsSpan());
 
             ConnectImpl(id, userConfig, localCommunicationVersion);
@@ -557,13 +596,6 @@ namespace LanPlayServer
             UserConfig userConfig = request.UserConfig;
             uint localCommunicationVersion = request.LocalCommunicationVersion;
             uint optionUnknown = request.OptionUnknown;
-
-            if (!_initialized)
-            {
-                SendAsync(_protocol.Encode(PacketId.NetworkError, new NetworkErrorMessage { Error = NetworkError.ConnectFailure }));
-
-                return;
-            }
 
             string id = Convert.ToHexString(request.SecurityParameter.SessionId.AsSpan());
 
