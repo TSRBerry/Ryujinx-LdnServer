@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
+using LanPlayServer.Utils;
 
 namespace LanPlayServer.Network
 {
@@ -86,7 +87,7 @@ namespace LanPlayServer.Network
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine($"Uncaught message exception: {e}");
+                        Logger.Instance.Error(ToString(), $"Uncaught message exception: {e}");
                     }
                 }
             }
@@ -377,7 +378,7 @@ namespace LanPlayServer.Network
 
         private LdnHeader GetHeader(PacketId type, int dataSize)
         {
-            Console.WriteLine($"[Protocol] Building packet of type: {type}");
+            Logger.Instance.Debug(ToString(), $"Building packet of type: {type}");
 
             return new LdnHeader()
             {

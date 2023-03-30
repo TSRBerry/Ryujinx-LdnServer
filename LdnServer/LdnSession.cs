@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
+using LanPlayServer.Utils;
 using Ryujinx.Common.Memory;
 
 namespace LanPlayServer
@@ -91,7 +92,7 @@ namespace LanPlayServer
 
         public bool SendAsync(byte[] buffer)
         {
-            Console.WriteLine($"[LdnSession] Sending packet to: {Endpoint}");
+            Logger.Instance.Debug(ToString(), $"Sending packet to: {Endpoint}");
 
             return _server.SendAsync(Endpoint, buffer);
         }
@@ -116,7 +117,7 @@ namespace LanPlayServer
 
         private void HandleAny(IPEndPoint endpoint, LdnHeader header)
         {
-            Console.WriteLine($"[LdnSession] ({Endpoint}) -> {(PacketId)header.Type}");
+            Logger.Instance.Debug(ToString(), $"{Endpoint} -> {(PacketId)header.Type}");
             if (_receivePacketType is not null && _receivePacketType == (PacketId)header.Type)
             {
                 _packetReceived.Set();
@@ -133,7 +134,7 @@ namespace LanPlayServer
             if (_waitingPingID != -1)
             {
                 // The last ping was not responded to. Force a disconnect (async).
-                Console.WriteLine($"Closing session with Id {Id} due to idle.");
+                Logger.Instance.Info(ToString(), $"Closing session with Id {Id} due to idle.");
                 Disconnect();
             }
             else
@@ -148,7 +149,7 @@ namespace LanPlayServer
 
                     _waitingPingID = pingId;
 
-                    Console.WriteLine($"[LdnSession] ({Endpoint}) Sending ping...");
+                    Logger.Instance.Debug(ToString(), $"{Endpoint}: Sending ping...");
 
                     SendAsync(_protocol.Encode(PacketId.Ping, new PingMessage { Id = pingId, Requester = 0 }));
                 }
@@ -262,11 +263,11 @@ namespace LanPlayServer
                 }
                 catch
                 {
-                    Console.WriteLine($"IP unavailable!");
+                    Logger.Instance.Error(ToString(), "IP unavailable!");
                     // Already disconnected?
                 }
 
-                Console.WriteLine($"LDN UDP session with Id {Id} connected! ({PrintIp()})");
+                Logger.Instance.Info(ToString(), $"LDN UDP session with Id {Id} connected! ({PrintIp()})");
 
                 _connected = true;
             }
@@ -282,7 +283,7 @@ namespace LanPlayServer
                 DisconnectFromGame();
             }
 
-            Console.WriteLine($"LDN UDP session with Id {Id} disconnected! ({PrintIp()})");
+            Logger.Instance.Info(ToString(), $"LDN UDP session with Id {Id} disconnected! ({PrintIp()})");
 
             _protocol.Dispose();
         }
@@ -299,7 +300,7 @@ namespace LanPlayServer
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Caught exception for session with Id {Id}: {e}");
+                Logger.Instance.Error(ToString(), $"Caught exception for session with Id {Id}: {e}");
             }
         }
 
@@ -480,7 +481,7 @@ namespace LanPlayServer
             {
                 if (_disconnected)
                 {
-                    Console.WriteLine($"Emergency disconnect: {id}");
+                    Logger.Instance.Warning(ToString(), $"Emergency disconnect: {id}");
                     game = null;
                 }
 
@@ -490,7 +491,7 @@ namespace LanPlayServer
 
             if (game == null)
             {
-                Console.WriteLine($"Null close: {id}");
+                Logger.Instance.Warning(ToString(), $"Null close: {id}");
                 _server.CloseGame(id);
             }
         }

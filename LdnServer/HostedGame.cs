@@ -8,6 +8,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using LanPlayServer.Utils;
 using Ryujinx.Common.Memory;
 
 namespace LanPlayServer
@@ -134,7 +135,7 @@ namespace LanPlayServer
         {
             if (!_lock.TryEnterReadLock(2000))
             {
-                Console.WriteLine($"Lock broken: {_lockReason} on {_info.NetworkId.IntentId.LocalCommunicationId:x16} with {_players.Count} players.");
+                Logger.Instance.Error(ToString(), $"Lock broken: {_lockReason} on {_info.NetworkId.IntentId.LocalCommunicationId:x16} with {_players.Count} players.");
 
                 return true;
             }
@@ -549,7 +550,7 @@ namespace LanPlayServer
             }
             catch (Exception e)
             {
-                Console.WriteLine("SUPER FATAL ERROR: " + e.ToString());
+                Logger.Instance.Error(ToString(), $"SUPER FATAL ERROR: {e}");
             }
 
             ExitLock();
@@ -604,13 +605,13 @@ namespace LanPlayServer
             {
                 // Can't upgrade the lock, try close in the background.
 
-                Task.Run(() => Close());
+                Task.Run(Close);
             }
             else
             {
                 EnterLock(GameLockReason.Close);
 
-                Console.WriteLine($"CLOSING: {Id}");
+                Logger.Instance.Info(ToString(), $"CLOSING: {Id}");
 
                 _closed = true;
 

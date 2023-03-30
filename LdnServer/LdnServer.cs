@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LanPlayServer.Network;
 using LanPlayServer.Network.Types;
+using LanPlayServer.Utils;
 
 namespace LanPlayServer
 {
@@ -29,7 +30,7 @@ namespace LanPlayServer
         public LdnServer(IPAddress address, int port) : base(address, port)
         {
             _protocol.Initialize += OnInitializeSession;
-            _protocol.Any += (endpoint, header) => Console.WriteLine($"[LdnServer] Received '{(PacketId)header.Type}' packet from: {endpoint}");
+            _protocol.Any += (endpoint, header) => Logger.Instance.Debug(ToString(), $"Received '{(PacketId)header.Type}' packet from: {endpoint}");
             Task.Run(BackgroundPingTask);
         }
 
@@ -51,24 +52,25 @@ namespace LanPlayServer
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"[LdnServer] Error decoding packet from {endpoint}: {e}");
+                    Logger.Instance.Error(ToString(), $"[LdnServer] Error decoding packet from {endpoint}: {e}");
                 }
             }
         }
 
         protected override void OnSent(EndPoint endpoint, long sent)
         {
-            Console.WriteLine($"[LdnServer] Sent packet of length '{sent}' to {endpoint}");
+            Logger.Instance.Debug(ToString(), $"[LdnServer] Sent packet of length '{sent}' to {endpoint}");
         }
 
         private void OnInitializeSession(IPEndPoint endpoint, LdnHeader header, InitializeMessage message)
         {
-            Console.WriteLine($"[LdnServer] Creating Session for '{endpoint}'...");
+            Logger.Instance.Info(ToString(), $"Creating Session for '{endpoint}'...");
             Sessions.Add(endpoint, new LdnSession(endpoint, this, message));
         }
 
         internal void DisconnectSession(LdnSession session)
         {
+            Logger.Instance.Info(ToString(), $"Disconnecting Session of '{session.Endpoint}'...");
             Sessions.Remove(session.Endpoint);
         }
 
@@ -91,7 +93,7 @@ namespace LanPlayServer
                     game.Close();
                     idTaken = true;
 
-                    Console.WriteLine($"id Taken: {id}");
+                    Logger.Instance.Warning(ToString(), $"id Taken: {id}");
                     return oldGame;
                 }
             });
@@ -221,7 +223,7 @@ namespace LanPlayServer
 
         protected override void OnError(SocketError error)
         {
-            Console.WriteLine($"LDN UDP server caught an error with code {error}");
+            Logger.Instance.Error(ToString(), $"LDN UDP server caught an error with code {error}");
         }
 
         protected override void OnStarted()
