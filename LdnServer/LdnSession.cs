@@ -35,6 +35,7 @@ namespace LanPlayServer
         private readonly AutoResetEvent _packetReceived = new(false);
         private readonly ManualResetEvent _proxyConfigReceived = new(false);
         private readonly AutoResetEvent _testPingReceived = new(false);
+        private readonly Stopwatch _pingStopwatch = new();
         private long _lastMessageTicks = Stopwatch.GetTimestamp();
         private int _waitingPingID = -1;
         private byte _pingId;
@@ -152,6 +153,7 @@ namespace LanPlayServer
                     Logger.Instance.Debug(ToString(), $"{Endpoint}: Sending ping...");
 
                     SendAsync(_protocol.Encode(PacketId.Ping, new PingMessage { Id = pingId, Requester = 0 }));
+                    _pingStopwatch.Restart();
                 }
             }
         }
@@ -172,8 +174,18 @@ namespace LanPlayServer
         {
             if (ping.Requester == 0 && ping.Id == _waitingPingID)
             {
+                _pingStopwatch.Stop();
                 // A response from this client. Still alive, reset the _waitingPingID. (getting the message will also reset the timer)
                 _waitingPingID = -1;
+
+                if (_pingStopwatch.ElapsedMilliseconds > 60)
+                {
+                    Logger.Instance.Warning(ToString(), $"Ping received after {_pingStopwatch.ElapsedMilliseconds} ms.");
+                }
+                else
+                {
+                    Logger.Instance.Debug(ToString(), $"Ping received after {_pingStopwatch.ElapsedMilliseconds} ms.");
+                }
             }
         }
 
