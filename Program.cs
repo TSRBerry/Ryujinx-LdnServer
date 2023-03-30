@@ -10,7 +10,7 @@ namespace LanPlayServer
     {
         static void Main(string[] args)
         {
-            int portLdn = 30456;
+            int portLdn = 30567;
             int portApi = 8080;
 
             Console.WriteLine();
@@ -26,14 +26,14 @@ namespace LanPlayServer
             Console.WriteLine("- Information");
 
             LdnServer ldnServer = new LdnServer(IPAddress.Any, portLdn);
-            ApiServer apiServer = new ApiServer(IPAddress.Any, portApi, ldnServer);
+            // ApiServer apiServer = new ApiServer(IPAddress.Any, portApi, ldnServer);
 
             Console.Write($"    LdnServer (port: {portLdn}/udp) starting...");
             ldnServer.Start();
             Console.WriteLine(" Done!");
 
             Console.Write($"    ApiServer (port: {portApi}) starting...");
-            apiServer.Start();
+            // apiServer.Start();
             Console.WriteLine(" Done!");
 #if DISABLE_CLI
             Console.WriteLine("CLI disabled (docker mode)");
@@ -69,7 +69,7 @@ namespace LanPlayServer
 
                 bool commandValid = line switch {
                     "!restart-ldn" => RestartLdnServer(ldnServer),
-                    "!restart-api" => RestartApiServer(apiServer),
+                    // "!restart-api" => RestartApiServer(apiServer),
                     "!list"        => List(ldnServer),
                     _ => false
                 };
@@ -87,7 +87,7 @@ namespace LanPlayServer
             Console.WriteLine(" Done!");
 
             Console.Write("ApiServer stopping...");
-            apiServer.Stop();
+            // apiServer.Stop();
             Console.WriteLine(" Done!");
 #endif
         }
