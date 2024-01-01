@@ -1,9 +1,8 @@
-{ lib, stdenv, fetchNuGet, buildDotnetModule, dotnetCorePackages }:
+{ pkgs ? import <nixpkgs> { }, stdenv ? pkgs.stdenv }:
 
 let
-in
 
-buildDotnetModule rec {
+in pkgs.buildDotnetModule rec {
   pname = "ryujinx-ldn-server";
   version = "0.1";
 
