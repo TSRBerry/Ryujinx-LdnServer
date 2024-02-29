@@ -139,25 +139,30 @@ def send_api_message(api_success: bool):
     webhook.execute(True)
 
 
-def restart_service():
+def restart_service(use_webhook=True):
     message = f":warning: <@&{SERVER_RESTART_PING_ROLE}> :warning:\n" \
               "The LDN server stopped working correctly.\nRestarting..."
-    webhook.set_content(message)
-    webhook.execute(True)
+    if use_webhook:
+        webhook.set_content(message)
+        webhook.execute(True)
+    logging.info("Restarting LDN service...")
     try:
         manager.RestartUnit(service_name, "fail")
+        logging.info("Successfully restarted LDN service!")
     except DBusException as ex:
         logging.exception("Could not restart the LDN service.")
-        webhook.set_content(f"{message} Error.\n```{ex}\n```")
-        webhook.edit()
+        if use_webhook:
+            webhook.set_content(f"{message} Error.\n```{ex}\n```")
+            webhook.edit()
         exit(1)
 
-    webhook.set_content(f"{message} Done.")
-    webhook.edit()
+    if use_webhook:
+        webhook.set_content(f"{message} Done.")
+        webhook.edit()
 
 
-def main():
-    global webhook, manager, service_name
+def init():
+    global manager, service_name
 
     if "DEBUG" in os.environ.keys():
         logging.getLogger().setLevel(logging.DEBUG)
@@ -177,6 +182,17 @@ def main():
 
     service_name = os.environ["LDN_SERVICE"]
     logging.debug(f"Got LDN service name: {service_name}")
+
+
+def debug_restart():
+    init()
+    restart_service(False)
+
+
+def main():
+    global webhook
+
+    init()
 
     if "DC_WEBHOOK" not in os.environ.keys() or len(os.environ["DC_WEBHOOK"]) == 0:
         logging.error("Discord webhook is not configured.")

@@ -18,6 +18,7 @@ black = "^23.7.0"
 
 [tool.poetry.scripts]
 ldn_healthcheck = "ldn_healthcheck.__main__:main"
+ldn_healthcheck_debug = "ldn_healthcheck.__main__:debug_restart"
 
 
 [build-system]

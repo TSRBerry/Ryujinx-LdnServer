@@ -110,13 +110,32 @@
               description = "LDN healthcheck script (RyuDoctor)";
               after = [ "network.target" ];
               script = ''
-                ${pkgs.ldn-healthcheck.dependencyEnv}/bin/python3 -m ldn_healthcheck
+                ${pkgs.ldn-healthcheck.dependencyEnv}/bin/ldn_healthcheck
               '';
 
               environment = {
                 LDN_SERVICE = cfg.ldnServiceName;
                 DC_WEBHOOK = cfg.discordWebhookUrl;
-              } // (if cfg.enableDebug then { DEBUG = 1; } else { });
+              } // (if cfg.enableDebug then { DEBUG = "1"; } else { });
+
+              serviceConfig = rec {
+                Type = "oneshot";
+                User = cfg.user;
+                Group = cfg.group;
+              };
+            };
+
+            systemd.services.ldn-healthcheck-debug = mkIf (cfg.enableDebug) {
+              description = "LDN healthcheck debug script";
+              after = [ "network.target" ];
+              script = ''
+                ${pkgs.ldn-healthcheck.dependencyEnv}/bin/ldn_healthcheck_debug
+              '';
+
+              environment = {
+                LDN_SERVICE = cfg.ldnServiceName;
+                DEBUG = "1";
+              };
 
               serviceConfig = rec {
                 Type = "oneshot";
