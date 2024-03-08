@@ -11,8 +11,8 @@ in pkgs.buildDotnetModule rec {
   projectFile = "LanPlayServer.sln";
   nugetDeps = ./deps.nix;
 
-  dotnet-sdk = dotnetCorePackages.sdk_7_0;
-  dotnet-runtime = dotnetCorePackages.runtime_7_0;
+  dotnet-sdk = pkgs.dotnetCorePackages.sdk_8_0;
+  dotnet-runtime = pkgs.dotnetCorePackages.runtime_8_0;
   selfContainedBuild = false;
 
   dotnetFlags = [

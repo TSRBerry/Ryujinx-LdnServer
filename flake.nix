@@ -23,8 +23,8 @@
             projectFile = "LanPlayServer.sln";
             nugetDeps = ./deps.nix;
 
-            dotnet-sdk = dotnetCorePackages.sdk_7_0;
-            dotnet-runtime = dotnetCorePackages.runtime_7_0;
+            dotnet-sdk = dotnetCorePackages.sdk_8_0;
+            dotnet-runtime = dotnetCorePackages.runtime_8_0;
             selfContainedBuild = false;
 
             dotnetFlags = [ "-p:PublishAOT=false" ];
@@ -35,22 +35,25 @@
         redis-json = with final;
           rustPlatform.buildRustPackage rec {
             pname = "RedisJSON";
-            version = "2.4.7";
+            version = "2.6.9";
 
             src = fetchgit {
               url = "https://github.com/RedisJSON/${pname}";
               fetchSubmodules = true;
               rev = "v${version}";
-              hash = "sha256-uDDDnTlTLe+O1H3B9uVI+l/b34ZmfTg1E7V8whmkn4g=";
+              hash = "sha256-uVXX641soIW7/UdyVSDtJnqToVQWgl6NGLnsu0iNbnk=";
             };
 
-            cargoHash = "sha256-LR2qlg19+ltdBZyO65EAYc7YL8Vo5HTa8YwNkWI8OeU=";
+            cargoLock = {
+              lockFile = "${src}/Cargo.lock";
+              outputHashes = {
+                "ijson-0.1.3" = "sha256-GFNNGsXWXS3BWsYffxhAnWtPh7rboGWJ1FmSHSidNmI=";
+              };
+            };
 
             cargoPatches = [ ./patches/RedisJSON-config-fix.patch ];
 
             nativeBuildInputs = [ rustPlatform.bindgenHook ];
-
-            cargoTestFlags = [ "--features=test" ];
 
             meta = with lib; {
               description = "A JSON data type for Redis";
