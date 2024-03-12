@@ -164,6 +164,8 @@
                 '';
               };
 
+              collectCrashDump = mkEnableOption (lib.mdDoc "Collect dotnet dumps on crash.");
+
               user = mkOption {
                 type = types.str;
                 default = "ryujinx-ldn";
@@ -244,7 +246,15 @@
                 LDN_PORT = toString cfg.ldnPort;
                 LDN_GAMELIST_PATH = cfg.gamelistPath;
                 LDN_REDIS_SOCKET = "${cfg.socketPath}/redis.sock";
-              };
+              } // (if cfg.collectCrashDump then {
+                DOTNET_DbgEnableMiniDump = "1";
+                # Create a full dump
+                DOTNET_DbgMiniDumpType = "4";
+                DOTNET_DbgMiniDumpName = "/tmp/%e-%p_%t.coredump";
+                DOTNET_CreateDumpDiagnostics = "1";
+                DOTNET_EnableCrashReport = "1";
+                DOTNET_CreateDumpVerboseDiagnostics = "1";
+              } else {});
 
               serviceConfig = rec {
                 Type = "simple";
@@ -320,4 +330,3 @@
 
       });
 }
-
