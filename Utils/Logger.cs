@@ -28,7 +28,7 @@ public class Logger : IDisposable
 
     private Logger()
     {
-        var fileStream = File.Open("Ryujinx-LdnServer.log", FileMode.Append, FileAccess.Write);
+        var fileStream = File.Open("/tmp/Ryujinx-LdnServer.log", FileMode.Append, FileAccess.Write);
         _writer = new StreamWriter(fileStream);
 
         _consumerThread = new Thread(ConsumeMessages)
