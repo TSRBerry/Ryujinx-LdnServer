@@ -1,21 +1,17 @@
 {
-  description = "Ryujinx-LdnServer flake env";
+  description = "Ryujinx-LdnServer UDP flake env";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
-
-    ryujinx-ldn-website = { url = "github:Ryujinx/Ryujinx-Ldn-Website"; };
-    ryujinx-ldn-website.inputs.nixpkgs.follows = "nixpkgs";
-    ryujinx-ldn-website.inputs.flake-utils.follows = "flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ryujinx-ldn-website }:
+  outputs = { self, nixpkgs, flake-utils }:
     let
       ldn_overlay = final: prev: {
-        ryujinx-ldn = with final;
+        ryujinx-ldn-udp = with final;
           buildDotnetModule rec {
-            pname = "ryujinx-ldn-server";
+            pname = "ryujinx-ldn-udp-server";
             version = "1.0.0";
 
             src = self;
@@ -27,50 +23,13 @@
             dotnet-runtime = dotnetCorePackages.runtime_8_0;
             selfContainedBuild = false;
 
-            dotnetFlags = [ "-p:PublishAOT=false" ];
+            dotnetFlags = [
+              "-p:PublishAOT=false"
+              "-p:ExtraDefineConstants=DISABLE_CLI"
+            ];
 
             executables = [ "LanPlayServer" ];
           };
-
-        redis-json = with final;
-          rustPlatform.buildRustPackage rec {
-            pname = "RedisJSON";
-            version = "2.6.9";
-
-            src = fetchgit {
-              url = "https://github.com/RedisJSON/${pname}";
-              fetchSubmodules = true;
-              rev = "v${version}";
-              hash = "sha256-uVXX641soIW7/UdyVSDtJnqToVQWgl6NGLnsu0iNbnk=";
-            };
-
-            cargoLock = {
-              lockFile = "${src}/Cargo.lock";
-              outputHashes = {
-                "ijson-0.1.3" = "sha256-GFNNGsXWXS3BWsYffxhAnWtPh7rboGWJ1FmSHSidNmI=";
-              };
-            };
-
-            cargoPatches = [ ./patches/RedisJSON-config-fix.patch ];
-
-            nativeBuildInputs = [ rustPlatform.bindgenHook ];
-
-            meta = with lib; {
-              description = "A JSON data type for Redis";
-              homepage = "https://github.com/RedisJSON/${pname}";
-              license = [
-                licenses.sspl
-                {
-                  shortName = "RSALv2";
-                  fullName = "Redis Source Available License 2.0";
-                  url = "https://redis.com/legal/rsalv2-agreement/";
-                  free = false;
-                  redistributable = true;
-                }
-              ];
-            };
-          };
-
       };
     in flake-utils.lib.eachDefaultSystem (system:
       let
@@ -78,48 +37,22 @@
           inherit system;
           overlays = [
             self.overlays."${system}"
-            ryujinx-ldn-website.overlays."${system}"
           ];
         };
       in {
         packages = {
-          default = self.packages.${system}.ryujinx-ldn;
-          ryujinx-ldn = pkgs.ryujinx-ldn;
-          redis-json = pkgs.redis-json;
+          default = self.packages.${system}.ryujinx-ldn-udp;
+          ryujinx-ldn-udp = pkgs.ryujinx-ldn-udp;
         };
 
         overlays = ldn_overlay;
 
         # TODO: fully define the module
-        nixosModules.ryujinx-ldn = { pkgs, lib, config, ... }: {
+        nixosModules.ryujinx-ldn-udp = { pkgs, lib, config, ... }: {
           options = let inherit (lib) mkEnableOption mkOption types;
           in {
-            services.ryujinx-ldn = {
-              enable = mkEnableOption (lib.mdDoc "Ryujinx LDN Server");
-
-              hostname = mkOption {
-                type = types.str;
-                default = "ldn.ryujinx.org";
-                description = lib.mdDoc ''
-                  The hostname to use to host Ryujinx LDN.
-                '';
-              };
-
-              dataPath = mkOption {
-                type = types.str;
-                default = "/var/lib/ryujinx-ldn";
-                description = lib.mdDoc ''
-                  The path to the data directory which is used by the LDN website.
-                '';
-              };
-
-              socketPath = mkOption {
-                type = types.str;
-                default = "/run/ryujinx-ldn";
-                description = lib.mdDoc ''
-                  The path to the directory where redis and the LDN website store their sockets in.
-                '';
-              };
+            services.ryujinx-ldn-udp = {
+              enable = mkEnableOption (lib.mdDoc "Ryujinx LDN UDP Server");
 
               ldnHost = mkOption {
                 type = types.str;
@@ -131,36 +64,9 @@
 
               ldnPort = mkOption {
                 type = types.number;
-                default = 30456;
+                default = 30567;
                 description = lib.mdDoc ''
                   The port which the LDN server exposes over ldnHost.
-                '';
-              };
-
-              gamelistPath = mkOption {
-                type = types.str;
-                default = "gamelist.json";
-                description = lib.mdDoc ''
-                  The path to the json file containing a list of games. This is used by the LDN server.
-
-                  Format of `gamelist.json`:
-                  ```json
-                  [
-                    {
-                      "id": "0x<application id of the game>",
-                      "name": "<name of the game>"
-                    },
-                    // ...
-                  ]
-                  ```
-                '';
-              };
-
-              nodeEnv = mkOption {
-                type = types.enum [ "development" "production" ];
-                default = "production";
-                description = lib.mdDoc ''
-                  The value of the node environment to be set for the LDN website.
                 '';
               };
 
@@ -184,68 +90,21 @@
 
           config = let
             inherit (lib) mkIf;
-            cfg = config.services.ryujinx-ldn;
+            cfg = config.services.ryujinx-ldn-udp;
           in mkIf cfg.enable {
-            nixpkgs.overlays = [ self.overlays."${system}" ryujinx-ldn-website.overlays."${system}" ];
+            nixpkgs.overlays = [ self.overlays."${system}" ];
 
             networking.nat.enable = true;
 
-            nixpkgs.config.allowUnfreePredicate = pkg:
-              builtins.elem (lib.getName pkg) [ "RedisJSON" ];
-
-            systemd.tmpfiles.rules = [
-              "d ${cfg.dataPath} - ${cfg.user} ${cfg.group} -"
-              "d ${cfg.socketPath} - ${cfg.user} ${cfg.group} -"
-            ];
-
-            services.redis.servers.ryujinx-ldn-stats = let
+            systemd.services.ryujinx-ldn-udp = let ldn = pkgs.ryujinx-ldn-udp;
             in {
-              enable = true;
-              port = 0;
-              save = [ ];
-              unixSocket = "${cfg.socketPath}/redis.sock";
-              user = cfg.user;
-              settings = {
-                loadmodule = [ "${pkgs.redis-json}/lib/librejson.so" ];
-              };
-            };
-
-            systemd.services.ryujinx-ldn-website =
-              let website = pkgs.ryujinx-ldn-website;
-              in {
-                description = "Ryujinx LDN Website";
-                after = [ "network.target" ];
-                wantedBy = [ "multi-user.target" ];
-
-                environment = {
-                  NODE_PATH = "${website}/node_modules";
-                  NODE_ENV = cfg.nodeEnv;
-                  DATA_PATH = cfg.dataPath;
-                  SOCKET_PATH = "${cfg.socketPath}/website.sock";
-                  REDIS_SOCKET = "${cfg.socketPath}/redis.sock";
-                };
-
-                serviceConfig = rec {
-                  Type = "simple";
-                  ExecStart = "${website}/bin/ryujinx-ldn-website";
-                  User = cfg.user;
-                  Group = cfg.group;
-                  WorkingDirectory = website;
-                  Restart = "on-failure";
-                };
-              };
-
-            systemd.services.ryujinx-ldn = let ldn = pkgs.ryujinx-ldn;
-            in {
-              description = "Ryujinx LDN Server";
+              description = "Ryujinx LDN UDP Server";
               after = [ "network.target" ];
               wantedBy = [ "multi-user.target" ];
 
               environment = {
                 LDN_HOST = cfg.ldnHost;
                 LDN_PORT = toString cfg.ldnPort;
-                LDN_GAMELIST_PATH = cfg.gamelistPath;
-                LDN_REDIS_SOCKET = "${cfg.socketPath}/redis.sock";
               } // (if cfg.collectCrashDump then {
                 DOTNET_DbgEnableMiniDump = "1";
                 # Create a full dump
@@ -266,15 +125,6 @@
               };
             };
 
-            services.nginx.virtualHosts."${cfg.hostname}" = {
-              forceSSL = true;
-              enableACME = true;
-              locations."/".proxyPass =
-                "http://unix:${cfg.socketPath}/website.sock:";
-              # TODO: Allow internal traffic to this location
-              locations."/info".extraConfig = "return 403;";
-            };
-
             users =
               mkIf (cfg.user == "ryujinx-ldn" && cfg.group == "ryujinx-ldn") {
                 users.ryujinx-ldn = {
@@ -290,7 +140,7 @@
                 };
               };
 
-            networking.firewall.allowedTCPPorts = [ cfg.ldnPort ];
+            networking.firewall.allowedUDPPorts = [ cfg.ldnPort ];
 
           };
         };
@@ -300,27 +150,19 @@
             inherit system;
           };
             makeTest {
-              name = "ryujinx-ldn nixos module testing ${system}";
+              name = "ryujinx-ldn-udp nixos module testing ${system}";
 
               nodes = {
                 client = { ... }: {
-                  imports = [ self.nixosModules.${system}.ryujinx-ldn ];
+                  imports = [ self.nixosModules.${system}.ryujinx-ldn-udp ];
 
-                  services.nginx.enable = true;
-                  services.ryujinx-ldn.enable = true;
-                  security.acme = {
-                    acceptTerms = true;
-
-                    defaults = { email = "dummy@website.com"; };
-                  };
+                  services.ryujinx-ldn-udp.enable = true;
                 };
               };
 
               testScript = ''
                 start_all()
-                client.wait_for_unit("ryujinx-ldn.service")
-                client.wait_for_unit("ryujinx-ldn-website.service")
-                client.wait_until_succeeds("curl --insecure --fail --header 'Host: ldn.ryujinx.org' https://localhost/api")
+                client.wait_for_unit("ryujinx-ldn-udp.service")
               '';
             };
 

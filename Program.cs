@@ -8,11 +8,11 @@ namespace LanPlayServer
 {
     class Program
     {
+        private static readonly IPAddress Host = IPAddress.Parse(Environment.GetEnvironmentVariable("LDN_HOST") ?? "0.0.0.0");
+        private static readonly int Port = int.Parse(Environment.GetEnvironmentVariable("LDN_PORT") ?? "30456");
+
         static void Main(string[] args)
         {
-            int portLdn = 30567;
-            int portApi = 8080;
-
             Console.WriteLine();
             Console.WriteLine( "__________                     __ .__                  .____         .___        ");
             Console.WriteLine(@"\______   \ ___.__. __ __     |__||__|  ____  ___  ___ |    |      __| _/  ____  ");
@@ -25,16 +25,16 @@ namespace LanPlayServer
             Console.WriteLine();
             Console.WriteLine("- Information");
 
-            LdnServer ldnServer = new LdnServer(IPAddress.Any, portLdn);
+            LdnServer ldnServer = new LdnServer(Host, Port);
             // ApiServer apiServer = new ApiServer(IPAddress.Any, portApi, ldnServer);
 
-            Console.Write($"    LdnServer (port: {portLdn}/udp) starting...");
+            Console.Write($"    LdnServer (port: {Port}/udp) starting...");
             ldnServer.Start();
             Console.WriteLine(" Done!");
 
-            Console.Write($"    ApiServer (port: {portApi}) starting...");
+            // Console.Write($"    ApiServer (port: {portApi}) starting...");
             // apiServer.Start();
-            Console.WriteLine(" Done!");
+            //Console.WriteLine(" Done!");
 #if DISABLE_CLI
             Console.WriteLine("CLI disabled (docker mode)");
             Console.WriteLine("----- UDP TEST -----");

@@ -20,11 +20,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1710162809,
-        "narHash": "sha256-i2R2bcnQp+85de67yjgZVvJhd6rRnJbSYNpGmB6Leb8=",
+        "lastModified": 1720535198,
+        "narHash": "sha256-zwVvxrdIzralnSbcpghA92tWu2DV2lwv89xZc8MTrbg=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ddcd7598b2184008c97e6c9c6a21c5f37590b8d2",
+        "rev": "205fd4226592cc83fd4c0885a3e4c9c400efabb5",
         "type": "github"
       },
       "original": {
@@ -37,31 +37,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
-        "ryujinx-ldn-website": "ryujinx-ldn-website"
-      }
-    },
-    "ryujinx-ldn-website": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1709936632,
-        "narHash": "sha256-W1/Ps3ohRA0LgUnsKQkWqjmwituysV4L9L+N4KKOfE0=",
-        "owner": "Ryujinx",
-        "repo": "Ryujinx-Ldn-Website",
-        "rev": "ad20ddea219bbe1779ab2af83ff3cb9043f3f42e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Ryujinx",
-        "repo": "Ryujinx-Ldn-Website",
-        "type": "github"
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {
