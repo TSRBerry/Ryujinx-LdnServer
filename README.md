@@ -11,6 +11,10 @@ __________                     __ .__                  .____         .___
 
 This server drives multiplayer "matchmaking" in Ryujinx's local wireless implementation. Players can create "networks" on the server, which can then be scanned and found by other players as if they were within that network's range. The server entirely manages the network information and player join/leave lifecycle for all games created.
 
+## License
+
+This software is licensed under the terms of the [MIT license](LICENSE.txt).
+
 ## Configuration
 
 This app can be configured using the following environment variables:
