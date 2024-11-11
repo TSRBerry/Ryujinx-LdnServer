@@ -11,6 +11,10 @@ __________                     __ .__                  .____         .___
 
 This server drives multiplayer "matchmaking" in Ryujinx's local wireless implementation. Players can create "networks" on the server, which can then be scanned and found by other players as if they were within that network's range. The server entirely manages the network information and player join/leave lifecycle for all games created.
 
+## License
+
+This software is licensed under the terms of the [MIT license](LICENSE.txt).
+
 ## Proxy
 
 Ryujinx uses an application layer proxy to simulate communications in a network, which directs traffic created by the C# socket to a proxy server, which routes and sends it to the relevant parties. By default, Ryujinx attempts to create a proxy server on the network owner's system, expose a port to the internet, and tell joiners to connect to it. If this does not work, the proxy is done through the master server itself, using a lot of the same mechanisms.
